@@ -1,0 +1,30 @@
+----------------------------------------------------------------------
+PMAppleT 2
+----------------------------------------------------------------------
+This L-system is a simulation of the growth of an apple tree.  The
+topology (rammification pattern) is governed by Markov models (after
+the model created by Michael Renton) and the form is governed by
+biomechanical principles (after the model created by Julia
+Taylor-Hell).  The parameters are selected to generate trees similar
+to thise of the Fuji cultivar.
+
+----------------------------------------------------------------------
+VPstat
+----------------------------------------------------------------------
+MAppleT relies on the library VPstat.  VPstat should be distributed
+with the MAppleT L-system.  The library as is can be copied to
+anywhere the user consideres convenient.  It is necessary to create an
+environment variable called VPSTAT to point to the VPstat folder.  For
+example, if VPstat is installed to "C:\Documents and Settings\user\My
+Documents", the environment variable VPSTAT must be "C:\Documents and
+Settings\user\My Documents\VPstat".
+
+----------------------------------------------------------------------
+Running MAppleT
+----------------------------------------------------------------------
+This version of MAppleT has been tested with L-studio 4.2.12 (using
+Visual C++ 2005 Express Edition) and L-studio 4.2.12 ATE (using g++
+3.4.2 mingw-special).  It comes with a Makefile for each version.
+Before running MApplet with L-studio, copy the file Makefile.vc to
+Makefile.  Before running it with L-studio ATE, copy Makefile.g to
+Makefile.

@@ -1,0 +1,174 @@
+
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>1.4. Differences between Lpy and LStudio &mdash; vplants v0.9 documentation</title>
+    <link rel="stylesheet" href="../_static/openalea.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../',
+        VERSION:     '0.9',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../_static/jquery.js"></script>
+    <script type="text/javascript" src="../_static/underscore.js"></script>
+    <script type="text/javascript" src="../_static/doctools.js"></script>
+    <link rel="shortcut icon" href="../_static/oaicon.ico"/>
+    <link rel="top" title="vplants v0.9 documentation" href="../index.html" />
+    <link rel="up" title="1. Stocatree User Guide" href="index.html" />
+    <link rel="next" title="1.5. MAppleT notes" href="mapplet.html" />
+    <link rel="prev" title="1.3. Results and Code validation" href="results.html" />
+ 
+<script type="text/javascript">
+  var _gaq = _gaq || [];
+  _gaq.push(['_setAccount', 'UA-4372857-3']);
+  _gaq.push(['_trackPageview']);
+</script>
+
+  </head>
+  <body>
+
+
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="mapplet.html" title="1.5. MAppleT notes"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="results.html" title="1.3. Results and Code validation"
+             accesskey="P">previous</a> |</li>
+
+
+<li><a href="../../../../../../openalea/doc/_build/html/index.html"> Main home </a>  |&nbsp;</li>
+<li><a href="../../../../../../openalea/doc/_build/html/vplants.html"> vplants packages </a> |&nbsp;</li><li><a href="../contents.html"> Documentation </a> &raquo;</li>
+          <li><a href="index.html" accesskey="U">1. Stocatree User Guide</a> &raquo;</li> 
+      </ul>
+    </div>
+
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="results.html"
+                        title="previous chapter">1.3. Results and Code validation</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="mapplet.html"
+                        title="next chapter">1.5. MAppleT notes</a></p>
+  <h3>This Page</h3>
+  <ul class="this-page-menu">
+    <li><a href="../_sources/user/lpy_versus_lstudio.txt"
+           rel="nofollow">Show Source</a></li>
+  </ul>
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" size="18" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <div class="section" id="differences-between-lpy-and-lstudio">
+<h1>1.4. Differences between Lpy and LStudio<a class="headerlink" href="#differences-between-lpy-and-lstudio" title="Permalink to this headline">¶</a></h1>
+<p>While moving from MAppleT to Stocatree, the original L system had to be
+translated. Of course C++ code had to be translated as well.  Concerning the
+Lsystem syntax, the translation was quite straightforward because Lpy and LStudio
+syntax are similar. Here are some differences that have been spotted, which
+could be useful to know:</p>
+<ul class="simple">
+<li>Stop() behaviour is not the same as in Lpy: does not go to the End function.
+So the End() function must be called explicitely.</li>
+<li>group in Lstudio can have a name by using #define  commands. In Lpy such
+usage is not possible and only numbers may be used as group&#8217;s name</li>
+<li>DisplayFrame() is called frameDisplay()</li>
+<li>func() function in LStudio is not available in Python, but python function
+may be used to replace it if required like in stocatree.</li>
+<li>original version $ symbol replace by &#64;v in lpy</li>
+</ul>
+<div class="admonition warning">
+<p class="first admonition-title">Warning</p>
+<p class="last">avoid to use lsystem string as an argument to EndEach  Otherwise
+this lstring will be replaced agaain and again each time iteration is perfomed
+with the consequence that it decreases the performace dramatically and
+requires huge memory (may have been fixed now).</p>
+</div>
+<p><em>Section author: Thomas Cokelaer</em></p>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="mapplet.html" title="1.5. MAppleT notes"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="results.html" title="1.3. Results and Code validation"
+             >previous</a> |</li>
+
+
+<li><a href="../../../../../../openalea/doc/_build/html/index.html"> Main home </a>  |&nbsp;</li>
+<li><a href="../../../../../../openalea/doc/_build/html/vplants.html"> vplants packages </a> |&nbsp;</li><li><a href="../contents.html"> Documentation </a> &raquo;</li>
+          <li><a href="index.html" >1. Stocatree User Guide</a> &raquo;</li> 
+      </ul>
+    </div>
+
+    <div class="footer">
+        &copy; Copyright None.
+      Last updated on Nov 23, 2010.
+      Created using <a href="http://sphinx.pocoo.org/">Sphinx</a> 1.0.5.
+    </div>
+<div class="footer">This page uses <a href="http://analytics.google.com/">
+Google Analytics</a> to collect statistics. You can disable it by blocking
+the JavaScript coming from www.google-analytics.com.
+<script type="text/javascript">
+  (function() {
+    var ga = document.createElement('script');
+    ga.src = ('https:' == document.location.protocol ?
+              'https://ssl' : 'http://www') + '.google-analytics.com/ga.js';
+    ga.setAttribute('async', 'true');
+    document.documentElement.firstChild.appendChild(ga);
+  })();
+</script>
+</div>
+
+  </body>
+</html>

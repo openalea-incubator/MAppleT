@@ -1,0 +1,4 @@
+[wralea]
+openalea.stocatree = stocatree_wralea
+openalea.stocatree.configuration = stocatree_configuration_wralea
+

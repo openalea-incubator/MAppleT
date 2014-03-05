@@ -1,0 +1,32 @@
+
+:Version 0.9.3: 4 Nov 2010
+* cleanup documentaiton and code
+
+
+:Version 0.9.2: 3 Nov 2010
+* complete tests
+
+
+:Version 0.9.1: 3d Nov 2010
+* Fix bug related to preformed leaves that were not proportional to the rank
+* Update the documentation
+
+
+:Version 0.9.0: 25 May 2010
+* refactoring of stocatree to optimise running time
+* fix bug related to moment of are of annular section
+* fix bug related to reaction wood
+* complete documentation and examples
+
+
+:Version 0.8.0: Dec 8th 2009
+*    Move all C++ code of MappleT into src/cpp
+*    copy relevant data into ./data
+*    create stocatree project in ./src/stocatree that is a python imlementation of MappleT
+*    create sphinx documentation of stocatree in ./doc
+
+
+:Version 0.7.0: 
+
+* MAppleT cpp code has been moved to ./src/cpp
+* StocaTree a python  implementation of MAppleT has been written and put in ./src/stocatree

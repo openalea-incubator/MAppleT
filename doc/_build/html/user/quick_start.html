@@ -1,0 +1,247 @@
+
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>1.1. Stocatree quick start &mdash; vplants v0.9 documentation</title>
+    <link rel="stylesheet" href="../_static/openalea.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../',
+        VERSION:     '0.9',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../_static/jquery.js"></script>
+    <script type="text/javascript" src="../_static/underscore.js"></script>
+    <script type="text/javascript" src="../_static/doctools.js"></script>
+    <link rel="shortcut icon" href="../_static/oaicon.ico"/>
+    <link rel="top" title="vplants v0.9 documentation" href="../index.html" />
+    <link rel="up" title="1. Stocatree User Guide" href="index.html" />
+    <link rel="next" title="1.2. Performance" href="code.html" />
+    <link rel="prev" title="1. Stocatree User Guide" href="index.html" />
+ 
+<script type="text/javascript">
+  var _gaq = _gaq || [];
+  _gaq.push(['_setAccount', 'UA-4372857-3']);
+  _gaq.push(['_trackPageview']);
+</script>
+
+  </head>
+  <body>
+
+
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="code.html" title="1.2. Performance"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="index.html" title="1. Stocatree User Guide"
+             accesskey="P">previous</a> |</li>
+
+
+<li><a href="../../../../../../openalea/doc/_build/html/index.html"> Main home </a>  |&nbsp;</li>
+<li><a href="../../../../../../openalea/doc/_build/html/vplants.html"> vplants packages </a> |&nbsp;</li><li><a href="../contents.html"> Documentation </a> &raquo;</li>
+          <li><a href="index.html" accesskey="U">1. Stocatree User Guide</a> &raquo;</li> 
+      </ul>
+    </div>
+
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+  <h3><a href="../contents.html">Table Of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">1.1. Stocatree quick start</a><ul>
+<li><a class="reference internal" href="#installation">1.1.1. Installation</a></li>
+<li><a class="reference internal" href="#using-stocatree-within-lpy">1.1.2. Using Stocatree within Lpy</a></li>
+<li><a class="reference internal" href="#using-stocatree-as-a-python-script">1.1.3. Using Stocatree as a python script</a></li>
+<li><a class="reference internal" href="#playing-with-the-configuration">1.1.4. Playing with the configuration</a></li>
+</ul>
+</li>
+</ul>
+
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="index.html"
+                        title="previous chapter">1. Stocatree User Guide</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="code.html"
+                        title="next chapter">1.2. Performance</a></p>
+  <h3>This Page</h3>
+  <ul class="this-page-menu">
+    <li><a href="../_sources/user/quick_start.txt"
+           rel="nofollow">Show Source</a></li>
+  </ul>
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" size="18" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <div class="section" id="stocatree-quick-start">
+<h1>1.1. Stocatree quick start<a class="headerlink" href="#stocatree-quick-start" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="installation">
+<h2>1.1.1. Installation<a class="headerlink" href="#installation" title="Permalink to this headline">¶</a></h2>
+<p>Sources are available from the <a class="reference external" href="https://gforge.inria.fr/scm/viewvc.php/vplants/trunk/MAppleT/?root=vplants">SVN</a>.
+Once the source are downloaded, the package can be installed by typing:</p>
+<div class="highlight-python"><pre>python setup.py install</pre>
+</div>
+<p>If you do not have the access to the SVN, you can still get a released version
+or source code from the main page project of vplants (see <a class="reference external" href="http://openalea.gforge.inria.fr">Openalea wiki</a>)</p>
+<div class="topic">
+<p class="topic-title first">dependencies and cython</p>
+<p>Stocatree requires the following packages:</p>
+<ul class="simple">
+<li>VPlants.Stat_tool, VPlants.Sequence_analysis,</li>
+<li>Vplants.PlantGL</li>
+<li>OpenAlea.Mtg.</li>
+<li>Vplants.Plantik</li>
+<li>Scipy/numpy/Matplotlib</li>
+</ul>
+<p>Note that there is also a Cython module, which goal is to make the code
+faster. It should compile and install automatically using the command above.</p>
+</div>
+<p>In order to test if the installation worked properly, open a python shell and
+type:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="kn">from</span> <span class="nn">openalea.stocatree</span> <span class="kn">import</span> <span class="o">*</span>
+<span class="n">a</span> <span class="o">=</span> <span class="n">apex_data</span><span class="p">()</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="using-stocatree-within-lpy">
+<h2>1.1.2. Using Stocatree within Lpy<a class="headerlink" href="#using-stocatree-within-lpy" title="Permalink to this headline">¶</a></h2>
+<p>Stocatree modules are used to assemble a model within a Lsystem, so what you want
+to do first is to run this Lsystem. You can find the script <strong>stocatree.lpy</strong>
+in <strong>./share/data/</strong> and starts the <strong>Lpy</strong> application to run it.</p>
+<p>Load the <strong>stocatree.lpy</strong> script from Lpy and press Run</p>
+<div class="admonition warning">
+<p class="first admonition-title">Warning</p>
+<p class="last">the plotting will slow down the computation as soon as the second year is reached. There is no need to look at the graphical output at every step, so we advice to use the Step iteration options and set it to 800, which corresponds to one season roughly speaking.</p>
+</div>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last">This documentation does not provide any help about LPy, you should look
+at the <a class="reference external" href="http://openalea.gforge.inria.fr/doc/openalea/doc/_build/html/vplants.html">VPlants.LPy</a>
+documentation instead.</p>
+</div>
+</div>
+<div class="section" id="using-stocatree-as-a-python-script">
+<h2>1.1.3. Using Stocatree as a python script<a class="headerlink" href="#using-stocatree-as-a-python-script" title="Permalink to this headline">¶</a></h2>
+<p>You can run Stocatree Lsystem from a python shell. Under Linux, we advice you
+to use <strong>ipython</strong>  with the <strong>-q4thread</strong> option (to use the PlantGL Viewer):</p>
+<div class="highlight-python"><pre>.. code-block:: bash</pre>
+</div>
+<blockquote>
+ipython -q4thread</blockquote>
+<p>then, import the relevant modules:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="kn">import</span> <span class="nn">openalea.lpy</span> <span class="kn">as</span> <span class="nn">lpy</span>
+<span class="kn">from</span> <span class="nn">PyQt4.QtCore</span> <span class="kn">import</span> <span class="o">*</span>
+<span class="kn">from</span> <span class="nn">PyQt4.QtGui</span> <span class="kn">import</span> <span class="o">*</span>
+<span class="kn">from</span> <span class="nn">openalea.stocatree</span> <span class="kn">import</span> <span class="n">get_shared_data</span>
+</pre></div>
+</div>
+<p>Read the <strong>lpy</strong> file and iterate through the simulation:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="n">l</span> <span class="o">=</span> <span class="n">lpy</span><span class="o">.</span><span class="n">Lsystem</span><span class="p">(</span><span class="n">get_shared_data</span><span class="p">(</span><span class="s">&#39;stocatree.lpy&#39;</span><span class="p">))</span>
+<span class="n">N</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="mi">2900</span><span class="o">*</span><span class="mi">2</span><span class="p">)</span> <span class="c"># fix the number of iterations</span>
+<span class="n">res</span> <span class="o">=</span> <span class="n">l</span><span class="o">.</span><span class="n">iterate</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+<span class="n">res</span> <span class="o">=</span> <span class="n">l</span><span class="o">.</span><span class="n">iterate</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span><span class="n">N</span><span class="p">,</span><span class="n">res</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>and finally, plot the results:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="n">app</span> <span class="o">=</span> <span class="n">QApplication</span><span class="p">([])</span>
+<span class="n">l</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">res</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>The previous code should render as follows</p>
+[<a href="#id1"><span class="problematic" id="id2">`source code &lt;..\plot_directive\inline/a87c4fc945.py&gt;`__</span></a>]<p>Exception occurred rendering plot.</p>
+<img alt="user\test.png" src="user\test.png" style="width: 480px; height: 480px;" />
+</div>
+<div class="section" id="playing-with-the-configuration">
+<h2>1.1.4. Playing with the configuration<a class="headerlink" href="#playing-with-the-configuration" title="Permalink to this headline">¶</a></h2>
+<p>The are many options that can be changed such as the time step, rendering colors,
+leaf size, tropism and so on. All these options are stored in a configuration
+file called <strong>stocatree.ini</strong>, which must be found in the same directory as the
+lsystem (in our case ./share/data). This file can be edited to fulfill your needs.
+(see reference guide, <a class="reference internal" href="autosum.html#module-openalea.stocatree.config_doc" title="openalea.stocatree.config_doc: read configuration file"><tt class="xref py py-mod docutils literal"><span class="pre">config_doc</span></tt></a>, for more details).</p>
+<p><em>Section author: Thomas Cokelaer</em></p>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="code.html" title="1.2. Performance"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="index.html" title="1. Stocatree User Guide"
+             >previous</a> |</li>
+
+
+<li><a href="../../../../../../openalea/doc/_build/html/index.html"> Main home </a>  |&nbsp;</li>
+<li><a href="../../../../../../openalea/doc/_build/html/vplants.html"> vplants packages </a> |&nbsp;</li><li><a href="../contents.html"> Documentation </a> &raquo;</li>
+          <li><a href="index.html" >1. Stocatree User Guide</a> &raquo;</li> 
+      </ul>
+    </div>
+
+    <div class="footer">
+        &copy; Copyright None.
+      Last updated on Nov 23, 2010.
+      Created using <a href="http://sphinx.pocoo.org/">Sphinx</a> 1.0.5.
+    </div>
+<div class="footer">This page uses <a href="http://analytics.google.com/">
+Google Analytics</a> to collect statistics. You can disable it by blocking
+the JavaScript coming from www.google-analytics.com.
+<script type="text/javascript">
+  (function() {
+    var ga = document.createElement('script');
+    ga.src = ('https:' == document.location.protocol ?
+              'https://ssl' : 'http://www') + '.google-analytics.com/ga.js';
+    ga.setAttribute('async', 'true');
+    document.documentElement.firstChild.appendChild(ga);
+  })();
+</script>
+</div>
+
+  </body>
+</html>

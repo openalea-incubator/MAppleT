@@ -1,0 +1,2 @@
+* Thomas Cokelaer, <Thomas Cokelaer __at__ sophia inria fr> (Stocatree MappleT in Python/Lpy)
+* Colin Smith (MAppleT CPP/Lstudio version)

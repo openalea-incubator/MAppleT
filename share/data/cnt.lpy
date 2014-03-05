@@ -1,0 +1,519 @@
+__revision__ = " $Id: stocatree.lpy 11526 2011-12-06 14:48:34Z liqihan $ "
+try:
+    import openalea.stocatre.optimisation as optimisation
+except:
+    import openalea.stocatree.non_optimised as optimisation
+import openalea.stocatree.constants as constants
+from openalea.stocatree.output import Data
+from openalea.stocatree.colors import Colors
+from openalea.stocatree.tree import Tree
+from openalea.stocatree.leaf import AppleLeaf
+from openalea.stocatree.fruit import AppleFruit
+from openalea.stocatree.wood import Wood
+from openalea.stocatree.internode import Internode
+from openalea.stocatree.apex import apex_data
+from openalea.plantik.tools.config import ConfigParams
+from openalea.stocatree.tools.simulation import SimulationStocatree
+from openalea.stocatree.sequences import Markov, generate_sequence, terminal_fate
+from openalea.stocatree.metamer import metamer_data
+from openalea.stocatree.growth_unit import growth_unit_data
+from openalea.sequence_analysis import HiddenSemiMarkov
+from vplants.plantgl.all import Vector3, cross, Viewer
+from openalea.stocatree.srandom import boolean_event
+from openalea.stocatree.physics import rotate_frame_at_branch, rupture
+from openalea.stocatree.tools.surface import *
+from openalea.stocatree import get_shared_data
+
+# Import the module for light interception (added by Han, 25-11-10)
+#from openalea.fractalysis.light.directLight import diffuseInterception
+from openalea.plantgl.all import Sphere, Viewer, Box, Vector3
+
+# This is to use the scene to calculate the leaf area, silhouette area as well as STAR
+# based on size and number of pixels in plantgl
+#from openalea.stocatree.interception import STAR
+from openalea.stocatree.data_process import Group, Statistics
+
+from openalea.stocatree.temperature_effects import Tp_date
+
+from openalea.stocatree.csv import ExprecCSV
+
+import time
+import os
+import datetime
+import random
+import math
+
+from datetime import datetime, timedelta
+
+# This is used to fix the seed when generating Markov chain, added by Han on 12-04-2011
+from openalea.sequence_analysis import _sequence_analysis as sa
+# This is to fix the seed when generating Markov chain, added by Han on 12-04-2011
+#sa.srand(1000)
+
+from openalea.stocatree.rw_tools import Ensure_dir, Recorder
+
+from lockfile import MkdirFileLock as Filelock
+
+#def pprint(*args):
+#  s=' '.join(str(arg) for arg in args)
+#  print s[:100]+'\n'
+
+gravity = Vector3(0.0, 0.0, -9.81);  #// in m s^-2 original mappleT
+
+# First, read the configuration file
+options = ConfigParams(get_shared_data('stocatree.ini'))
+# This was changed by Han on 08-12-2011, to allow setting parameters before
+# running lsystem
+# options = None
+
+#Added by Han in May 2011
+#This is to reset the parameter values in options (based on stocatree.ini) with values assigned in Sensitivity_Parameters.ini
+ini_reset = ConfigParams(get_shared_data('Sensitivity_Parameters.ini'))
+for obj in ini_reset.__dict__:
+    if obj != "config":
+        #If the object is also in options
+        if hasattr(options,obj):
+            #Get the value of obj (which is also an object)
+            op_obj = getattr(options,obj)
+            for attr in ini_reset.__dict__[obj].__dict__:
+                if hasattr(op_obj,attr):
+                    #Get parameter value of attr from obj
+                    pv = getattr(ini_reset.__dict__[obj],attr)
+                    #Set attr in op_obj with the same value as in obj
+                    setattr(op_obj,attr,pv)
+                    setattr(options,obj,op_obj)
+
+#Added by Han in November 2010
+if options.general.batchmode == True:
+  #define the directory of the files for counting experiments and for storing output results in batchmode
+  #output_directory = "Batchmode_ExpCounters&Results/"
+  output_directory = options.general.batch_dir
+else:
+  output_directory = "Singlemode_ExpCounters&Results/"
+  #output_directory = options.general.single_dir
+
+print output_directory
+
+#r = Recorder("ParallelResults/" + "current_exp.h")
+#r.clear()
+#lock = Filelock("ParallelResults/" + "current_exp.h")
+#lock.release()
+
+# Then, define a data structure to store outputs such as MTG, counts, sequences and so on
+data = Data(options=options, revision=__revision__)
+
+# Initialise the simulation
+simulation = SimulationStocatree(dt=options.general.time_step,
+  starting_date=options.general.starting_year,
+  ending_date=options.general.end_year)
+
+# Read PGLshape surfaces
+stride = int(options.stocatree.stride_number)
+leaf_surface = leafSurface(stride, stride)
+ground_surface = groundSurface(stride, stride)
+petal_surface = petalSurface(stride, stride)
+
+# init markov and tree instances
+markov          = Markov(**options.markov.__dict__)
+markov.hsm_96_medium = HiddenSemiMarkov(get_shared_data('fmodel_fuji_5_15_y3_96.txt'))
+markov.hsm_97_medium = HiddenSemiMarkov(get_shared_data('fmodel_fuji_5_15_y4_97.txt'))
+markov.hsm_98_medium = HiddenSemiMarkov(get_shared_data('fmodel_fuji_5_15_y5_98.txt'))
+markov.hsm_95_long = HiddenSemiMarkov(get_shared_data('fmodel_fuji_y12.txt'))
+markov.hsm_96_long = HiddenSemiMarkov(get_shared_data('fmodel_fuji_16_65_y3_96.txt'))
+markov.hsm_97_long = HiddenSemiMarkov(get_shared_data('fmodel_fuji_16_65_y4_97.txt'))
+markov.hsm_98_long = HiddenSemiMarkov(get_shared_data('fmodel_fuji_16_65_y5_98.txt'))
+
+# The following objects (tree, wood, internode, apex_parameters, leaf, fruit
+# are used to store the user parameters and are used by the metamer_data
+# class to create new metamers.
+# tree is unique throughout the simulation, so only one instance is used
+tree            = Tree(**options.tree.__dict__)
+# wood and internode are unique as well isnce they only contain parameters
+wood            = Wood(**options.wood.__dict__)
+internode       = Internode(**options.internode.__dict__)
+
+#!!! apices and leaves are specific to a metamer later on a deepcopy is used.
+
+temp = {}
+temp.update(options.apex.__dict__)
+temp.update(options.markov.__dict__)
+apex_parameters = temp
+leaf_parameters = options.leaf.__dict__
+fruit_parameters = options.fruit.__dict__
+
+# setup the colors once for all
+colors = Colors()
+
+#define the leaf area function once for all
+simulation.func_leaf_area_init(get_shared_data('functions.fset'))
+
+#define the range of leaf color to represent light interception
+leaf_color_max = 96
+leaf_color_min = 36
+
+#define the date for light interception
+interception_year = simulation.ending_date.year
+interception_month = simulation.ending_date.month
+interception_day = simulation.ending_date.day
+
+#Here "itr_stp" is a counter to help in determining which step the light interception should occur at.
+#Note that there are eight steps for using all the four l-system groups each time and there is no need
+#to have the light interception at each step.
+interception_step = 7
+itr_stp = 0
+
+# This function is used to check the day for light interception: if it is the time, return True; otherwise False
+def Interception_Day():
+  interc = simulation.date.month==interception_month and simulation.date.day==interception_day
+  #interc = simulation.date.year == interception_year and simulation.date.month==interception_month and simulation.date.day==interception_day
+  #interc = simulation.date.year == simulation.ending_date.year and simulation.date.month==interception_month and simulation.date.day==interception_day
+  return interc
+
+###################################
+# DONT CHANGE ANYTHING HERE BELOW #
+###################################
+
+#define the group enumerate here 0 used for rendering. !! physics and update_parameters inverse on purpose
+initialisation    = 0
+update_parameters = 1
+update_structure  = 4
+statistics        = 3
+physics           = 2
+
+module apex(apex_data): scale=2
+module branch(): scale=1
+module growth_unit(growth_unit_data): scale=1
+module axiom()
+module metamer(metamer_data): scale=2
+module root(): scale=1
+
+numerical_resolution_counter = 0
+
+global norm
+
+current_experiment = 0
+if options.general.batchmode == True:
+    # Read the id of the current virtual experiment
+    exp_rec = Recorder(output_directory + 'exp_recorder.h')
+    exp_rec.read()
+    current_experiment = exp_rec.content
+else:
+    exp_rec = Recorder(output_directory + 'exp_recorder.h')
+    exp_rec.read()
+    previous_experiment = exp_rec.content
+    if previous_experiment == '':
+      previous_experiment = -1
+    current_experiment = int(previous_experiment) + 1
+
+#Added by Han on 23-05-2011
+# to prevent one processor from using wrong information that should belong to another processor
+# Or, to prevent more than one processors from using the same parameter values
+###r = Recorder(output_directory + "current_exp.h")
+
+
+
+stp = 0
+
+def Start():
+    print options.internode.max_length
+    #Added by Han on 23-05-2011
+    # to prevent one processor from using wrong information that should belong to another processor
+###    r.read()
+###    if r.content == "":
+###        r.write(str(current_experiment))
+###    else:
+        #print options.general.batch_dir
+        #print output_directory
+        #print current_experiment
+        #r.read()
+        #print r.content
+###        print r.content
+###        Stop()
+
+    global time1
+    time1 = time.time()
+    #random.seed(1000)
+    #random.seed(simulation.seed)
+    # init the data to store the required outputs (sequence, lstring, mtg, ...)
+    data.init()
+
+def StartEach():
+    #Added by Han on 06-12-2011
+    #to allow the scene can be directly saved in EndEach()
+    frameDisplay(True)
+
+    #Added by Han on 23-05-2011
+    # to prevent one processor from using wrong information that should belong to another processor
+
+
+    global itr_stp
+
+    if simulation.date.year in [1994,1995]:
+        markov.hsm_medium = markov.hsm_96_medium
+        markov.hsm_long   = markov.hsm_95_long
+    elif simulation.date.year == 1996:
+        markov.hsm_medium = markov.hsm_96_medium
+        markov.hsm_long   = markov.hsm_96_long
+    elif simulation.date.year == 1997:
+        markov.hsm_medium = markov.hsm_97_medium
+        markov.hsm_long   = markov.hsm_97_long
+    else:
+        markov.hsm_medium = markov.hsm_98_medium
+        markov.hsm_long   = markov.hsm_98_long
+
+    if Interception_Day():
+      if itr_stp > interception_step:
+        itr_stp = 0
+    else:
+      itr_stp = 0
+
+    #Added by Han in December 2010
+    global bud_date
+    global bud_break
+    if options.stocatree.light_interception:
+       if Interception_Day():
+         if itr_stp == interception_step:
+           frameDisplay(True)
+         #else:
+           #frameDisplay(False)
+       else:
+         frameDisplay(True)
+
+    #Added by Han in May 2011
+    if options.temperature.temperature_effect == True:
+      #This is used to calculate, at the beginning of each year, the date for bud break in this year
+      #Note that the year for onset of chilling effect should be one year earlier than options.starting_year
+      if simulation.date.month == 1 and simulation.date.day == 1:
+        tp_dt = Tp_date(onset_year = simulation.date.year,
+                          optimal_temperature = options.temperature.optimal_temperature,
+                          chilling_effect_interval = options.temperature.chilling_effect_interval,
+                          chilling_effect_onset_month = options.temperature.chilling_effect_onset_month,
+                          chilling_effect_onset_day = options.temperature.chilling_effect_onset_day,
+                          chilling_quantity_required = options.temperature.chilling_quantity_required,
+                          characteristic_temperature = options.temperature.characteristic_temperature,
+                          heat_sigmoidal = options.temperature.heat_sigmoidal,
+                          sigmoidal_slope = options.temperature.sigmoidal_slope,
+                          heat_quantity_required = options.temperature.heat_quantity_required)
+        bud_date = datetime(*tp_dt.bud_break())
+      #if simulation.date.year == bud_date.year and simulation.date.month == bud_date.month and simulation.date.day == bud_date.day:
+      if simulation.date >= bud_date and simulation.date <= bud_date + timedelta(1):
+        bud_break = True
+      else:
+        bud_break = False
+    #If the temperature effect is off, the previous method developed by Cokelaer will be used for calculating bud break date
+    else:
+      bud_break = simulation.events.bud_break.active
+
+    #if bud_break:
+      #print bud_break
+      #print simulation.date
+
+def EndEach(lstring,scene):
+    global stp
+    stp +=1
+    global time1
+    global itr_stp
+    global current_experiment
+
+    # -------------------- light interception ---------------------------------------------
+    if Interception_Day():
+        if itr_stp == interception_step:
+            if options.stocatree.light_interception:
+                #!! first you need to display the scene
+                if scene is None:
+                    return
+                Viewer.display(scene)
+                res = diffuseInterception(scene)
+                leaves = {}
+
+                system_time = datetime.utcnow()
+                system_year = system_time.year
+                system_month = system_time.month
+                system_day = system_time.day
+                system_hour = system_time.hour
+                system_minute = system_time.minute
+                system_second = system_time.second
+
+                #Added by Han on 26-04-2011
+                print "######"
+                print simulation.date.year
+                print "######"
+
+                # Added by Han on 26-04-2011
+                #To interact with the light environment using plantGL:
+                star = STAR(lstring, scene)
+                star.collect(lstring, scene)
+                star.process_shoot(lstring, scene)
+
+                # Added by Han on 03-05-2011
+                current_time = datetime.utcnow()
+                experiment_date = str(current_time.hour) + ":" + str(current_time.minute) + " " + str(current_time.day) + "/" + str(current_time.month) + "/" + str(current_time.year)
+                simulation_date = str(simulation.date.day)  + "/" + str(simulation.date.month)  + "/" + str(simulation.date.year)
+                stat = Statistics(lstring, ["parent_observation", 'length', 'leaf_area', 'ta_pgl', 'sa_pgl', 'star_pgl'],
+                    shoot_level = True, branch_level = True, tree_level = True,
+                    exp_id = current_experiment, growth_date = simulation_date, exp_date = experiment_date,
+                    dir = output_directory)
+
+            ######Outputs (modified and relocated by Han on 19-04-2011)######
+            #Output of MTG
+            if options.output.mtg is True:
+                print "Hi"
+                if options.general.batchmode == True:
+                    data.mtg.build_filename("Batch_Exp%d_%4.0f_%02d_%02d" \
+                    % (int(current_experiment), simulation.date.year, simulation.date.month, simulation.date.day))
+                else:
+                    data.mtg.build_filename("Single_Exp%d_%4.0f_%02d_%02d" \
+                    % (int(current_experiment), simulation.date.year, simulation.date.month, simulation.date.day))
+                data.mtg.init()
+                data.mtg.save(lstring, simulation.date, tree.trunk_radius)
+
+            # save the lstring
+            if options.output.l_string is True:
+                data.l_string.init()
+                data.l_string.save(lstring, simulation.date)
+            if options.output.counts:
+                save = data.counts.advance(simulation.dt)
+                if save:
+                    data.counts.save(simulation.date)
+                if simulation.date.day == 0:
+                    data.counts.reset()
+
+            # save the scene
+            if options.stocatree.savescene is True:
+              #Modified by Han on 06-12-2011 to save scenes directly rather than using "Viewer.getCurrentScene()"
+              #s = Viewer.getCurrentScene()
+              s = scene
+              if options.general.batchmode == True:
+                  s.save(output_directory + "scene_Batch_Exp%d_%4.0f_%02d_%02d.bgeom" \
+                  % (int(current_experiment), simulation.date.year, simulation.date.month, simulation.date.day))
+              else:
+                  s.save(output_directory + "scene_Single_Exp%d_%4.0f_%02d_%02d.bgeom" \
+                  % (int(current_experiment), simulation.date.year, simulation.date.month, simulation.date.day))
+             ################################################################
+
+    if Interception_Day():
+        itr_stp += 1
+
+    if simulation.date > simulation.ending_date:
+        #pprint( 'The simulation has ended  %s %s\n' %  (options.general.end_year, simulation.date))
+        Stop()
+        End(lstring,scene)
+    # This switch controls the selection of which group of
+    # productions to apply.  The general sequence is:
+    #  initialisation --> update parameters --> output (L-string or MTG) --> physics --> statistics --> update structure --> update parameters
+    # Rendering happens after 'update parameters'.  'output' is only
+    # called conditionally; mostly, the simulation goes straight from
+    # 'output parameters' to 'physics'
+
+    if simulation.phase == initialisation:
+        useGroup(update_parameters)
+        simulation.phase = update_parameters
+        frameDisplay(False)
+    elif simulation.phase == update_parameters:
+        global numerical_resolution_counter
+        numerical_resolution_counter += 1
+        if numerical_resolution_counter < simulation.rotation_convergence.steps:
+            simulation.dt = 0.0 # days
+            frameDisplay(False)
+            #jump to the physics phase
+        else:
+            #if options.general.verbose is True:
+                #print '%s (n elts=%s, it=%s)' % (simulation.date, len(lstring), getIterationNb())
+            #if options.stocatree.saveimage is True:
+                #print 'saving stocatree_output%05d.png' % getIterationNb(), 'png'
+                #Viewer.frameGL.saveImage('stocatree_output%05d.png' % getIterationNb(), 'png')
+            simulation.dt = simulation.base_dt
+            numerical_resolution_counter = 0
+
+        newyear = simulation.advance()
+        #TODO#
+
+        if simulation.events.harvest.active:
+            tree.fruits_harvested = tree.fruits
+            tree.fruits = 0
+            simulation.harvested = True
+
+        #outputs
+        #The previous codes for outputs were relocated by Han on 19-04-2011 to above to the "Interception_Day()" and the "itr_stp == interception_step" conditions
+
+        # save trunk data
+        if options.output.trunk:
+            data.trunk.save(simulation.date, tree.trunk_radius,tree.trunk_cross_sectional_area)
+
+        useGroup(physics)
+        simulation.phase = physics
+        backward()
+    elif simulation.phase == statistics:
+        useGroup(update_structure)
+        simulation.phase = update_structure
+        frameDisplay(False)
+    elif simulation.phase == physics:
+        useGroup(statistics)
+        simulation.phase = statistics
+        forward()
+        frameDisplay(False)
+    elif simulation.phase == update_structure:
+        useGroup(update_parameters)
+        simulation.phase = update_parameters
+        frameDisplay(False)
+    else:
+        ValueError('must not enter here')
+
+
+
+def End(lstring,scene):
+
+    global data
+    data.close_all()
+    data.save()
+    global time1
+
+    # The codes for scene saving was moved upwards to the "outputs" section, by Han on 19-04-2011
+    #if options.stocatree.savescene is True:
+        #s = Viewer.getCurrentScene()
+        #s.save('stocatree.bgeom')
+        #s.save('stocatree.pov')
+
+    time2 = time.time()
+
+    if options.stocatree.movie is True:
+        from openalea.plantik.tools.movies import create_movie
+        create_movie(input_glob='stocatree*png', output_filename='stocatree')
+
+    if options.general.batchmode == False:
+      exp_rec = open(output_directory + 'exp_recorder.h', 'w')
+      exp_rec.write('%u' % current_experiment)
+      exp_rec.close()
+
+    #Added by Han on 23-05-2011
+    # to prevent one processor from using wrong information that should belong to another processor
+###    r.clear()
+
+    #Record the id of the experiment that has been successfully finished
+    sc = Recorder(output_directory + "exp_successful.h")
+    sc.write(str(current_experiment))
+
+
+derivation length: int(options.general.max_iterations)
+
+Axiom: axiom()
+
+ignore: growth_unit
+
+group 0:
+
+axiom():
+    a = apex_data(tree.initial_hlu, 'trunk', **apex_parameters)
+    produce  root() apex(a)
+
+group 0:
+#// Graphical rendering of the tree
+interpretation:
+
+root():
+    produce SB() SetColor(colors.ground) PglShape(ground_surface, 10.0) EB();
+
+endgroup
+homomorphism:
+
+endlsystem

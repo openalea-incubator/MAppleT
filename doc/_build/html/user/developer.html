@@ -1,0 +1,257 @@
+
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>1.6. Developer information &mdash; vplants v0.9 documentation</title>
+    <link rel="stylesheet" href="../_static/openalea.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../',
+        VERSION:     '0.9',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../_static/jquery.js"></script>
+    <script type="text/javascript" src="../_static/underscore.js"></script>
+    <script type="text/javascript" src="../_static/doctools.js"></script>
+    <link rel="shortcut icon" href="../_static/oaicon.ico"/>
+    <link rel="top" title="vplants v0.9 documentation" href="../index.html" />
+    <link rel="up" title="1. Stocatree User Guide" href="index.html" />
+    <link rel="next" title="1.7. Bibliography" href="biblio.html" />
+    <link rel="prev" title="1.5. MAppleT notes" href="mapplet.html" />
+ 
+<script type="text/javascript">
+  var _gaq = _gaq || [];
+  _gaq.push(['_setAccount', 'UA-4372857-3']);
+  _gaq.push(['_trackPageview']);
+</script>
+
+  </head>
+  <body>
+
+
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="biblio.html" title="1.7. Bibliography"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="mapplet.html" title="1.5. MAppleT notes"
+             accesskey="P">previous</a> |</li>
+
+
+<li><a href="../../../../../../openalea/doc/_build/html/index.html"> Main home </a>  |&nbsp;</li>
+<li><a href="../../../../../../openalea/doc/_build/html/vplants.html"> vplants packages </a> |&nbsp;</li><li><a href="../contents.html"> Documentation </a> &raquo;</li>
+          <li><a href="index.html" accesskey="U">1. Stocatree User Guide</a> &raquo;</li> 
+      </ul>
+    </div>
+
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+  <h3><a href="../contents.html">Table Of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">1.6. Developer information</a><ul>
+<li><a class="reference internal" href="#about-this-documentation">1.6.1. About this documentation</a><ul>
+<li><a class="reference internal" href="#how-to-generate-this-documentation">1.6.1.1. How to generate this documentation</a></li>
+<li><a class="reference internal" href="#how-to-upload-it-on-the-web">1.6.1.2. How to upload it on the web</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#code-quality">1.6.2. Code Quality</a><ul>
+<li><a class="reference internal" href="#nosetests">1.6.2.1. nosetests</a></li>
+<li><a class="reference internal" href="#doctest">1.6.2.2. doctest</a></li>
+<li><a class="reference internal" href="#doctest-summary">1.6.2.3. Doctest summary</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="mapplet.html"
+                        title="previous chapter">1.5. MAppleT notes</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="biblio.html"
+                        title="next chapter">1.7. Bibliography</a></p>
+  <h3>This Page</h3>
+  <ul class="this-page-menu">
+    <li><a href="../_sources/user/developer.txt"
+           rel="nofollow">Show Source</a></li>
+  </ul>
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" size="18" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <div class="section" id="developer-information">
+<h1>1.6. Developer information<a class="headerlink" href="#developer-information" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="about-this-documentation">
+<h2>1.6.1. About this documentation<a class="headerlink" href="#about-this-documentation" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="how-to-generate-this-documentation">
+<h3>1.6.1.1. How to generate this documentation<a class="headerlink" href="#how-to-generate-this-documentation" title="Permalink to this headline">¶</a></h3>
+<p>First, you need to install Sphinx if it is not already installed:</p>
+<div class="highlight-python"><pre>easy_install -U sphinx</pre>
+</div>
+<p>Then, go into the main directory of the source code (e.g., plants/MAppleT), and type:</p>
+<div class="highlight-python"><pre>python setup.py build_sphinx</pre>
+</div>
+<p>or in the ./doc directory, type:</p>
+<div class="highlight-python"><pre>make html</pre>
+</div>
+<p>test test
+test
+test</p>
+</div>
+<div class="section" id="how-to-upload-it-on-the-web">
+<h3>1.6.1.2. How to upload it on the web<a class="headerlink" href="#how-to-upload-it-on-the-web" title="Permalink to this headline">¶</a></h3>
+<p>In the main directory of the source code (vplants/MAppleT), type:</p>
+<div class="highlight-python"><pre>python setup.py upload_sphinx</pre>
+</div>
+</div>
+</div>
+<div class="section" id="code-quality">
+<h2>1.6.2. Code Quality<a class="headerlink" href="#code-quality" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="nosetests">
+<h3>1.6.2.1. nosetests<a class="headerlink" href="#nosetests" title="Permalink to this headline">¶</a></h3>
+<p>Version 0.9.2 of Stocatree is fully tested with  80 tests in the <strong>./test/</strong> directory. These tests covers the python modules used within the lsystem <strong>stocatree.lpy</strong>. They cover about 98% of the code. The tests may be run using the following commands:</p>
+<div class="highlight-python"><pre>python setup.py nosetests</pre>
+</div>
+<div class="highlight-python"><pre>Name                                     Stmts   Exec  Cover   Missing
+----------------------------------------------------------------------
+openalea.stocatree                           4      4   100%
+openalea.stocatree.apex                     51     51   100%
+openalea.stocatree.colors                   70     70   100%
+openalea.stocatree.constants                 4      4   100%
+openalea.stocatree.fruit                    31     31   100%
+openalea.stocatree.growth_unit               7      7   100%
+openalea.stocatree.internode                25     25   100%
+openalea.stocatree.leaf                     72     72   100%
+openalea.stocatree.metamer                 185    170    91%   373-388, 398
+openalea.stocatree.output                  219    218    99%   313
+openalea.stocatree.physics                 122    122   100%
+openalea.stocatree.pipe                      7      7   100%
+openalea.stocatree.sequences               157    156    99%   291
+openalea.stocatree.srandom                  22     22   100%
+openalea.stocatree.tools                     1      1   100%
+openalea.stocatree.tools.read_function      67     67   100%
+openalea.stocatree.tools.simulation         27     27   100%
+openalea.stocatree.tools.surface            16     16   100%
+openalea.stocatree.tree                     32     32   100%
+openalea.stocatree.wood                      9      9   100%
+----------------------------------------------------------------------
+TOTAL                                     1128   1111    98%
+----------------------------------------------------------------------
+Ran 80 tests in 19.273s</pre>
+</div>
+</div>
+<div class="section" id="doctest">
+<h3>1.6.2.2. doctest<a class="headerlink" href="#doctest" title="Permalink to this headline">¶</a></h3>
+<p>In addition, these documentation may contain codes that can be tested using the following command within <strong>./doc/</strong>:</p>
+<div class="highlight-python"><pre>make doctest</pre>
+</div>
+<p>Alternatively, go to the main directory of the package and type:</p>
+<div class="highlight-python"><pre>python setup.py build_sphinx -b doctest</pre>
+</div>
+</div>
+<div class="section" id="doctest-summary">
+<h3>1.6.2.3. Doctest summary<a class="headerlink" href="#doctest-summary" title="Permalink to this headline">¶</a></h3>
+<div class="highlight-python"><pre>Document: user/autosum
+----------------------
+1 items passed all tests:
+  55 tests in default
+55 tests in 1 items.
+55 passed and 0 failed.
+Test passed.
+
+Doctest summary
+===============
+   55 tests
+    0 failures in tests
+    0 failures in setup code
+build succeeded, 2 warnings.</pre>
+</div>
+<p><em>Section author: Thomas Cokelaer</em></p>
+</div>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="biblio.html" title="1.7. Bibliography"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="mapplet.html" title="1.5. MAppleT notes"
+             >previous</a> |</li>
+
+
+<li><a href="../../../../../../openalea/doc/_build/html/index.html"> Main home </a>  |&nbsp;</li>
+<li><a href="../../../../../../openalea/doc/_build/html/vplants.html"> vplants packages </a> |&nbsp;</li><li><a href="../contents.html"> Documentation </a> &raquo;</li>
+          <li><a href="index.html" >1. Stocatree User Guide</a> &raquo;</li> 
+      </ul>
+    </div>
+
+    <div class="footer">
+        &copy; Copyright None.
+      Last updated on Nov 23, 2010.
+      Created using <a href="http://sphinx.pocoo.org/">Sphinx</a> 1.0.5.
+    </div>
+<div class="footer">This page uses <a href="http://analytics.google.com/">
+Google Analytics</a> to collect statistics. You can disable it by blocking
+the JavaScript coming from www.google-analytics.com.
+<script type="text/javascript">
+  (function() {
+    var ga = document.createElement('script');
+    ga.src = ('https:' == document.location.protocol ?
+              'https://ssl' : 'http://www') + '.google-analytics.com/ga.js';
+    ga.setAttribute('async', 'true');
+    document.documentElement.firstChild.appendChild(ga);
+  })();
+</script>
+</div>
+
+  </body>
+</html>

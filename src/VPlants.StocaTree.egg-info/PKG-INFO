@@ -1,0 +1,10 @@
+Metadata-Version: 1.0
+Name: VPlants.StocaTree
+Version: 0.9.4
+Summary: Apple Tree simulation using Markov Chains based on MAppleT.
+Home-page: http://openalea.gforge.inria.fr
+Author: Thomas Cokelaer (stocatree), Colin Smith (MAppleT)
+Author-email: Thomas Cokelaer at sophia inria fr
+License: Cecill-C
+Description: UNKNOWN
+Platform: UNKNOWN

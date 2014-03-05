@@ -1,0 +1,38 @@
+COMPILER = cl
+FLAGS    = /EHsc /Ox /Za /wd4127 /W4 /WX
+
+lsys.dll: lsys.obj calendar.obj ini.obj physics.obj quaternion.obj random.obj sequences.obj
+	@echo Creating lsys.dll ...
+	link /DLL /OUT:lsys.dll $(VPSTAT)/lib/rw.lib $(VPSTAT)/lib/statistics.lib \
+	calendar.obj ini.obj lsys.obj physics.obj quaternion.obj random.obj sequences.obj
+
+calendar.obj: calendar.cpp calendar.hpp array.hpp constrained_value.hpp Makefile
+	@echo Compiling calendar
+	$(COMPILER) $(FLAGS) /c calendar.cpp
+
+ini.obj: ini.cpp ini.hpp Makefile
+	@echo Compiling ini
+	$(COMPILER) $(FLAGS) /c ini.cpp
+
+lsys.obj: lsys.i Makefile
+        @echo Compiling lsys
+        $(COMPILER) $(FLAGS) /wd4100 /I$(VPSTAT) /c /TP lsys.i
+
+physics.obj: physics.cpp physics.hpp quaternion.hpp units.hpp v3.hpp Makefile
+        @echo Compiling physics
+        $(COMPILER) $(FLAGS) /c physics.cpp
+
+quaternion.obj: quaternion.cpp quaternion.hpp constrained_value.hpp range.hpp v3.hpp Makefile
+        @echo Compiling quaternion
+        $(COMPILER) $(FLAGS) /c quaternion.cpp
+
+random.obj: random.cpp random.hpp range.hpp Makefile
+        @echo Compiling random
+        $(COMPILER) $(FLAGS) /c random.cpp
+
+sequences.obj: sequences.cpp sequences.hpp range.hpp Makefile
+        @echo Compiling sequences
+        $(COMPILER) $(FLAGS) /I$(VPSTAT) /c sequences.cpp
+
+clean:
+        del *.obj *~ *.i *.dll *.log lsystem.bmp counts*.txt trunk*.dat mtg*.mtg lsys.exp

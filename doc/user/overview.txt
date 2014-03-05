@@ -1,0 +1,14 @@
+This package contains the original C++ code of MAppleT, which is not maintained
+anymore. A new implementation has been written in Python to be used within 
+**OpenAlea** framework. This python implementation is called **Stocatree** and 
+provides a LSystem (similar but not identical to MAppleT) that can be used with
+**LPy** 
+
+See the user guide and reference guide for more information about installation and
+usage.
+
+.. image:: user/stocatree_nov_1997.png
+    :width: 350px
+    :height: 350px
+    :align: center
+

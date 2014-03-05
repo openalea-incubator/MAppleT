@@ -1,0 +1,319 @@
+
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>MAppleT and Stocatree documentation &mdash; vplants v0.9 documentation</title>
+    <link rel="stylesheet" href="_static/openalea.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '',
+        VERSION:     '0.9',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <link rel="shortcut icon" href="_static/oaicon.ico"/>
+    <link rel="top" title="vplants v0.9 documentation" href="index.html" />
+    <link rel="next" title="1. Stocatree User Guide" href="user/index.html" />
+ 
+<script type="text/javascript">
+  var _gaq = _gaq || [];
+  _gaq.push(['_setAccount', 'UA-4372857-3']);
+  _gaq.push(['_trackPageview']);
+</script>
+
+  </head>
+  <body>
+
+
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="user/index.html" title="1. Stocatree User Guide"
+             accesskey="N">next</a> |</li>
+
+
+<li><a href="../../../../../openalea/doc/_build/html/index.html"> Main home </a>  |&nbsp;</li>
+<li><a href="../../../../../openalea/doc/_build/html/vplants.html"> vplants packages </a> |&nbsp;</li><li><a href="#"> Documentation </a> &raquo;</li> 
+      </ul>
+    </div>
+
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+  <h3><a href="#">Table Of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">MAppleT and Stocatree documentation</a><ul>
+<li><a class="reference internal" href="#module-description">Module description</a></li>
+<li><a class="reference internal" href="#documentation">Documentation</a><ul>
+</ul>
+</li>
+<li><a class="reference internal" href="#authors">Authors</a></li>
+<li><a class="reference internal" href="#changelog">ChangeLog</a></li>
+<li><a class="reference internal" href="#license">License</a></li>
+</ul>
+</li>
+</ul>
+
+  <h4>Next topic</h4>
+  <p class="topless"><a href="user/index.html"
+                        title="next chapter">1. Stocatree User Guide</a></p>
+  <h3>This Page</h3>
+  <ul class="this-page-menu">
+    <li><a href="_sources/contents.txt"
+           rel="nofollow">Show Source</a></li>
+  </ul><a href="http://openalea.gforge.inria.fr"><img src="_static/wiki_logo_openalea.png", 1) }}" alt="Openalea Wiki" /></a><h3 style="background:gray;border: solid 1px black;margin:0.2em;padding:0.2em ">Download</h3>
+<p>Current version: <b>0.9.4</b></p>
+<p> Get OpenAlea and related projects from our WIKI page <a href="http://openalea.gforge.inria.fr/dokuwiki/doku.php?id=download">OpenAlea wiki</a> or directly from the <a href="http://gforge.inria.fr/frs/?group_id=79">OpenAlea GForge</a></p>
+
+
+<h3 style="background:gray;border: solid 1px black;margin:0.2em;padding:0.2em ">Questions? Suggestions?</h3>
+
+<p>Join the <a href="http://openalea.gforge.inria.fr/dokuwiki/doku.php?id=forum">OpenAlea group</a> forum and mailing lists.</p>
+  
+<p>You can also open an issue at the
+<a href="https://gforge.inria.fr/tracker/?group_id=79">tracker</a>.</p>
+
+
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" size="18" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <div class="section" id="mapplet-and-stocatree-documentation">
+<span id="stocatree"></span><h1>MAppleT and Stocatree documentation<a class="headerlink" href="#mapplet-and-stocatree-documentation" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="module-description">
+<h2>Module description<a class="headerlink" href="#module-description" title="Permalink to this headline">¶</a></h2>
+<div class="sidebar">
+<p class="first sidebar-title">Summary</p>
+<table class="last docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field"><th class="field-name">Version:</th><td class="field-body">0.9.4</td>
+</tr>
+<tr class="field"><th class="field-name">Release:</th><td class="field-body">0.9</td>
+</tr>
+<tr class="field"><th class="field-name">Date:</th><td class="field-body">November 23, 2010</td>
+</tr>
+<tr class="field"><th class="field-name">Author:</th><td class="field-body">See <a class="reference internal" href="#authors">Authors</a> section</td>
+</tr>
+<tr class="field"><th class="field-name">ChangeLog:</th><td class="field-body">See <a class="reference internal" href="#changelog">ChangeLog</a> section</td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="topic">
+<p class="topic-title first">Overview</p>
+<p>This package contains the original C++ code of MAppleT, which is not maintained
+anymore. A new implementation has been written in Python to be used within
+<strong>OpenAlea</strong> framework. This python implementation is called <strong>Stocatree</strong> and
+provides a LSystem (similar but not identical to MAppleT) that can be used with
+<strong>LPy</strong></p>
+<p>See the user guide and reference guide for more information about installation and
+usage.</p>
+<img alt="_images/stocatree_nov_1997.png" class="align-center" src="_images/stocatree_nov_1997.png" style="width: 350px; height: 350px;" />
+</div>
+</div>
+<div class="section" id="documentation">
+<h2>Documentation<a class="headerlink" href="#documentation" title="Permalink to this headline">¶</a></h2>
+<div class="toctree-wrapper compound">
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="user/index.html">1. User Guide</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="user/quick_start.html">1.1. Quick start</a></li>
+<li class="toctree-l2"><a class="reference internal" href="user/code.html">1.2. Performance</a></li>
+<li class="toctree-l2"><a class="reference internal" href="user/results.html">1.3. Results and Code validation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="user/lpy_versus_lstudio.html">1.4. Differences between Lpy and LStudio</a></li>
+<li class="toctree-l2"><a class="reference internal" href="user/mapplet.html">1.5. MAppleT notes</a></li>
+<li class="toctree-l2"><a class="reference internal" href="user/developer.html">1.6. Developer information</a></li>
+<li class="toctree-l2"><a class="reference internal" href="user/biblio.html">1.7. Bibliography</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="user/autosum.html">2. Reference Guide</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="user/autosum.html#biological-modules">2.1. Biological modules</a></li>
+<li class="toctree-l2"><a class="reference internal" href="user/autosum.html#scientific-modules">2.2. Scientific modules</a></li>
+<li class="toctree-l2"><a class="reference internal" href="user/autosum.html#rendering-and-post-analysis">2.3. Rendering and post analysis</a></li>
+<li class="toctree-l2"><a class="reference internal" href="user/autosum.html#optimisation-module">2.4. Optimisation module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="user/autosum.html#tools">2.5. tools</a></li>
+<li class="toctree-l2"><a class="reference internal" href="user/autosum.html#module-openalea.stocatree.config_doc">2.6. <tt class="docutils literal"><span class="pre">config_doc</span></tt> config</a></li>
+</ul>
+</li>
+</ul>
+</div>
+<ul class="simple">
+<li>A <a class="reference external" href="../latex/main.pdf">PDF</a> version of VPlants.StocaTree documentation is also available.</li>
+</ul>
+</div>
+<div class="section" id="authors">
+<h2>Authors<a class="headerlink" href="#authors" title="Permalink to this headline">¶</a></h2>
+<ul class="simple">
+<li>Thomas Cokelaer, &lt;Thomas Cokelaer __at__ sophia inria fr&gt; (Stocatree MappleT in Python/Lpy)</li>
+<li>Colin Smith (MAppleT CPP/Lstudio version)</li>
+</ul>
+</div>
+<div class="section" id="changelog">
+<h2>ChangeLog<a class="headerlink" href="#changelog" title="Permalink to this headline">¶</a></h2>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field"><th class="field-name">Version 0.9.3:</th><td class="field-body">4 Nov 2010</td>
+</tr>
+</tbody>
+</table>
+<ul class="simple">
+<li>cleanup documentaiton and code</li>
+</ul>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field"><th class="field-name">Version 0.9.2:</th><td class="field-body">3 Nov 2010</td>
+</tr>
+</tbody>
+</table>
+<ul class="simple">
+<li>complete tests</li>
+</ul>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field"><th class="field-name">Version 0.9.1:</th><td class="field-body">3d Nov 2010</td>
+</tr>
+</tbody>
+</table>
+<ul class="simple">
+<li>Fix bug related to preformed leaves that were not proportional to the rank</li>
+<li>Update the documentation</li>
+</ul>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field"><th class="field-name">Version 0.9.0:</th><td class="field-body">25 May 2010</td>
+</tr>
+</tbody>
+</table>
+<ul class="simple">
+<li>refactoring of stocatree to optimise running time</li>
+<li>fix bug related to moment of are of annular section</li>
+<li>fix bug related to reaction wood</li>
+<li>complete documentation and examples</li>
+</ul>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field"><th class="field-name">Version 0.8.0:</th><td class="field-body">Dec 8th 2009</td>
+</tr>
+</tbody>
+</table>
+<ul class="simple">
+<li>Move all C++ code of MappleT into src/cpp</li>
+<li>copy relevant data into ./data</li>
+<li>create stocatree project in ./src/stocatree that is a python imlementation of MappleT</li>
+<li>create sphinx documentation of stocatree in ./doc</li>
+</ul>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field"><th class="field-name">Version 0.7.0:</th><td class="field-body"></td>
+</tr>
+</tbody>
+</table>
+<ul class="simple">
+<li>MAppleT cpp code has been moved to ./src/cpp</li>
+<li>StocaTree a python  implementation of MAppleT has been written and put in ./src/stocatree</li>
+</ul>
+</div>
+<div class="section" id="license">
+<h2>License<a class="headerlink" href="#license" title="Permalink to this headline">¶</a></h2>
+<p>VPlants.StocaTree is released under a Cecill-C License.</p>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last"><a class="reference external" href="http://www.cecill.info/licences/Licence_CeCILL-C_V1-en.html">Cecill-C</a>
+license is a LGPL compatible license.</p>
+</div>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="user/index.html" title="1. Stocatree User Guide"
+             >next</a> |</li>
+
+
+<li><a href="../../../../../openalea/doc/_build/html/index.html"> Main home </a>  |&nbsp;</li>
+<li><a href="../../../../../openalea/doc/_build/html/vplants.html"> vplants packages </a> |&nbsp;</li><li><a href="#"> Documentation </a> &raquo;</li> 
+      </ul>
+    </div>
+
+    <div class="footer">
+        &copy; Copyright None.
+      Last updated on Nov 23, 2010.
+      Created using <a href="http://sphinx.pocoo.org/">Sphinx</a> 1.0.5.
+    </div>
+<div class="footer">This page uses <a href="http://analytics.google.com/">
+Google Analytics</a> to collect statistics. You can disable it by blocking
+the JavaScript coming from www.google-analytics.com.
+<script type="text/javascript">
+  (function() {
+    var ga = document.createElement('script');
+    ga.src = ('https:' == document.location.protocol ?
+              'https://ssl' : 'http://www') + '.google-analytics.com/ga.js';
+    ga.setAttribute('async', 'true');
+    document.documentElement.firstChild.appendChild(ga);
+  })();
+</script>
+</div>
+
+  </body>
+</html>

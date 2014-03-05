@@ -1,0 +1,328 @@
+
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>1.3. Results and Code validation &mdash; vplants v0.9 documentation</title>
+    <link rel="stylesheet" href="../_static/openalea.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../',
+        VERSION:     '0.9',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../_static/jquery.js"></script>
+    <script type="text/javascript" src="../_static/underscore.js"></script>
+    <script type="text/javascript" src="../_static/doctools.js"></script>
+    <link rel="shortcut icon" href="../_static/oaicon.ico"/>
+    <link rel="top" title="vplants v0.9 documentation" href="../index.html" />
+    <link rel="up" title="1. Stocatree User Guide" href="index.html" />
+    <link rel="next" title="1.4. Differences between Lpy and LStudio" href="lpy_versus_lstudio.html" />
+    <link rel="prev" title="1.2. Performance" href="code.html" />
+ 
+<script type="text/javascript">
+  var _gaq = _gaq || [];
+  _gaq.push(['_setAccount', 'UA-4372857-3']);
+  _gaq.push(['_trackPageview']);
+</script>
+
+  </head>
+  <body>
+
+
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="lpy_versus_lstudio.html" title="1.4. Differences between Lpy and LStudio"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="code.html" title="1.2. Performance"
+             accesskey="P">previous</a> |</li>
+
+
+<li><a href="../../../../../../openalea/doc/_build/html/index.html"> Main home </a>  |&nbsp;</li>
+<li><a href="../../../../../../openalea/doc/_build/html/vplants.html"> vplants packages </a> |&nbsp;</li><li><a href="../contents.html"> Documentation </a> &raquo;</li>
+          <li><a href="index.html" accesskey="U">1. Stocatree User Guide</a> &raquo;</li> 
+      </ul>
+    </div>
+
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+  <h3><a href="../contents.html">Table Of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">1.3. Results and Code validation</a><ul>
+<li><a class="reference internal" href="#results">1.3.1. Results</a></li>
+<li><a class="reference internal" href="#code-validation">1.3.2. Code validation</a><ul>
+<li><a class="reference internal" href="#counts">1.3.2.1. counts</a></li>
+<li><a class="reference internal" href="#trunk-size">1.3.2.2. Trunk size</a></li>
+<li><a class="reference internal" href="#fruits">1.3.2.3. Fruits</a></li>
+<li><a class="reference internal" href="#units">1.3.2.4. Units</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="code.html"
+                        title="previous chapter">1.2. Performance</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="lpy_versus_lstudio.html"
+                        title="next chapter">1.4. Differences between Lpy and LStudio</a></p>
+  <h3>This Page</h3>
+  <ul class="this-page-menu">
+    <li><a href="../_sources/user/results.txt"
+           rel="nofollow">Show Source</a></li>
+  </ul>
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" size="18" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <div class="section" id="results-and-code-validation">
+<h1><a class="toc-backref" href="#id8">1.3. Results and Code validation</a><a class="headerlink" href="#results-and-code-validation" title="Permalink to this headline">¶</a></h1>
+<div class="contents topic" id="contents">
+<p class="topic-title first">Contents</p>
+<ul class="simple">
+<li><a class="reference internal" href="#results-and-code-validation" id="id8">Results and Code validation</a><ul>
+<li><a class="reference internal" href="#results" id="id9">Results</a></li>
+<li><a class="reference internal" href="#code-validation" id="id10">Code validation</a><ul>
+<li><a class="reference internal" href="#counts" id="id11">counts</a></li>
+<li><a class="reference internal" href="#trunk-size" id="id12">Trunk size</a></li>
+<li><a class="reference internal" href="#fruits" id="id13">Fruits</a></li>
+<li><a class="reference internal" href="#units" id="id14">Units</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</div>
+<div class="section" id="results">
+<h2><a class="toc-backref" href="#id9">1.3.1. Results</a><a class="headerlink" href="#results" title="Permalink to this headline">¶</a></h2>
+<p>Here below are some pictures of the simulation. For instance, after two years
+and a half, we obtained this visual results:</p>
+<img alt="../_images/stocatree_june_1996.jpg" src="../_images/stocatree_june_1996.jpg" />
+<img alt="../_images/stocatree_sept_1996.jpg" src="../_images/stocatree_sept_1996.jpg" />
+<table border="1" class="docutils">
+<colgroup>
+<col width="54%" />
+<col width="46%" />
+</colgroup>
+<thead valign="bottom">
+<tr><th class="head">&nbsp;</th>
+<th class="head">&nbsp;</th>
+</tr>
+</thead>
+<tbody valign="top">
+<tr><td><img alt="im1" class="align-middle" src="../_images/stocatree_nov_1996.jpg" style="width: 200pt; height: 200pt;" /></td>
+<td><img alt="im2" class="align-middle" src="../_images/stocatree_sept_1996.jpg" style="width: 200pt; height: 200pt;" /></td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="section" id="code-validation">
+<h2><a class="toc-backref" href="#id10">1.3.2. Code validation</a><a class="headerlink" href="#code-validation" title="Permalink to this headline">¶</a></h2>
+<p>Here below are some numbers that can be compared</p>
+<div class="section" id="counts">
+<h3><a class="toc-backref" href="#id11">1.3.2.1. counts</a><a class="headerlink" href="#counts" title="Permalink to this headline">¶</a></h3>
+<p>Results from MAppleT (3 years)</p>
+<div class="highlight-python"><pre>#shorts  longs florals mediums len_16_to_25    len_26_to_40    len_over_40 fruits
+
+0    0   0   0   0   0   0   0   0
+1    6   1   0   1   1   0   5   0
+73   34  43  0   23  22  11  1   0</pre>
+</div>
+<div class="highlight-python"><pre>0   0   0   0   0   0   0   0
+0   7   1   0   1   1   2   4
+49  33  72  0   31  17  14  2</pre>
+</div>
+<p>Results from stocatree (5 years)</p>
+<div class="highlight-python"><pre>#shorts longs   florals 0   mediums len_16_to_25    len_26_to_40    len_over_40 fruits
+1995-01-01   0   0   0   0   0   0   0   0
+1996-01-01   1   6   1   0   1   1   0   5
+1997-01-01   48  38  52  0   19  11  25  2
+1998-01-01   300     58  238     0   62  45  11  2
+1999-01-01   557     30  245     0   119     27  3   0</pre>
+</div>
+</div>
+<div class="section" id="trunk-size">
+<h3><a class="toc-backref" href="#id12">1.3.2.2. Trunk size</a><a class="headerlink" href="#trunk-size" title="Permalink to this headline">¶</a></h3>
+<p><strong>Trunk Radius in meters</strong></p>
+<table border="1" class="docutils">
+<colgroup>
+<col width="58%" />
+<col width="21%" />
+<col width="21%" />
+</colgroup>
+<thead valign="bottom">
+<tr><th class="head">&nbsp;</th>
+<th class="head">&nbsp;</th>
+<th class="head">&nbsp;</th>
+</tr>
+</thead>
+<tbody valign="top">
+<tr><td>year 1</td>
+<td>0.00308</td>
+<td>TODO</td>
+</tr>
+<tr><td>year 2</td>
+<td>0.00679</td>
+<td>TODO</td>
+</tr>
+<tr><td>year 3</td>
+<td>0.01506</td>
+<td>1.52 cm</td>
+</tr>
+<tr><td>year 4</td>
+<td>0.023</td>
+<td>TODO</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Trunk surface</strong></p>
+<table border="1" class="docutils">
+<colgroup>
+<col width="53%" />
+<col width="22%" />
+<col width="25%" />
+</colgroup>
+<thead valign="bottom">
+<tr><th class="head">&nbsp;</th>
+<th class="head">&nbsp;</th>
+<th class="head">&nbsp;</th>
+</tr>
+</thead>
+<tbody valign="top">
+<tr><td>year 1</td>
+<td>2.9 10-5</td>
+<td>&nbsp;</td>
+</tr>
+<tr><td>year 2</td>
+<td>0.000144</td>
+<td>TODO</td>
+</tr>
+<tr><td>year 2</td>
+<td>0.000726</td>
+<td>0.000734</td>
+</tr>
+<tr><td>year 4</td>
+<td>0.0017</td>
+<td>TODO</td>
+</tr>
+</tbody>
+</table>
+<div class="highlight-python"><div class="highlight"><pre><span class="kn">import</span> <span class="nn">numpy</span>
+<span class="kn">import</span> <span class="nn">pylab</span>
+
+<span class="n">data</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">loadtxt</span><span class="p">(</span><span class="s">&#39;../data/trunk.dat&#39;</span><span class="p">,</span> <span class="n">converters</span><span class="o">=</span><span class="p">{</span><span class="mi">0</span><span class="p">:</span><span class="k">lambda</span> <span class="n">x</span><span class="p">:</span><span class="mi">1</span><span class="p">})</span>
+<span class="n">pylab</span><span class="o">.</span><span class="n">clf</span><span class="p">();</span>
+<span class="n">pylab</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="mi">1994</span><span class="o">+</span><span class="n">data</span><span class="p">[:,</span><span class="mi">1</span><span class="p">]</span><span class="o">/</span><span class="mi">365</span><span class="p">,</span> <span class="mi">100</span><span class="o">*</span> <span class="n">data</span><span class="p">[:,</span><span class="mi">2</span><span class="p">]);</span>
+<span class="n">pylab</span><span class="o">.</span><span class="n">xlabel</span><span class="p">(</span><span class="s">&#39;Time(days)&#39;</span><span class="p">);</span> 
+<span class="n">pylab</span><span class="o">.</span><span class="n">ylabel</span><span class="p">(</span><span class="s">&#39;Trunk radius (cm)&#39;</span><span class="p">);</span>
+<span class="c">#pylab.savefig(&#39;trunk_radius_versus_time.png&#39;)</span>
+</pre></div>
+</div>
+<p>[<a href="#id1"><span class="problematic" id="id2">`source code &lt;..\plot_directive\pyplots/trunk_radius_versus_time.py&gt;`__</span></a>, <a href="#id1"><span class="problematic" id="id3">`hires.png &lt;..\plot_directive\pyplots/trunk_radius_versus_time.hires.png&gt;`__</span></a>, <a href="#id1"><span class="problematic" id="id4">`pdf &lt;..\plot_directive\pyplots/trunk_radius_versus_time.pdf&gt;`__</span></a>]</p>
+<div class="figure">
+<img alt="../_images/trunk_radius_versus_time.png" src="../_images/trunk_radius_versus_time.png" />
+</div>
+<img alt="../_images/trunk_radius_versus_time_ori.png" src="../_images/trunk_radius_versus_time_ori.png" style="width: 45%; height: 7cm;" />
+</div>
+<div class="section" id="fruits">
+<h3><a class="toc-backref" href="#id13">1.3.2.3. Fruits</a><a class="headerlink" href="#fruits" title="Permalink to this headline">¶</a></h3>
+<p>[<a href="#id1"><span class="problematic" id="id5">`source code &lt;..\plot_directive\pyplots/fruit.py&gt;`__</span></a>, <a href="#id1"><span class="problematic" id="id6">`hires.png &lt;..\plot_directive\pyplots/fruit.hires.png&gt;`__</span></a>, <a href="#id1"><span class="problematic" id="id7">`pdf &lt;..\plot_directive\pyplots/fruit.pdf&gt;`__</span></a>]</p>
+<div class="figure">
+<img alt="../_images/fruit.png" src="../_images/fruit.png" />
+</div>
+</div>
+<div class="section" id="units">
+<h3><a class="toc-backref" href="#id14">1.3.2.4. Units</a><a class="headerlink" href="#units" title="Permalink to this headline">¶</a></h3>
+<p>Unlike MAppleT, stocatree does not used a specific units module to manage
+physical units. Units are in S.I. that is meters, kilograms. However,
+for convenience, the time units are currently set in days.</p>
+<p><em>Section author: Thomas Cokelaer</em></p>
+</div>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="lpy_versus_lstudio.html" title="1.4. Differences between Lpy and LStudio"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="code.html" title="1.2. Performance"
+             >previous</a> |</li>
+
+
+<li><a href="../../../../../../openalea/doc/_build/html/index.html"> Main home </a>  |&nbsp;</li>
+<li><a href="../../../../../../openalea/doc/_build/html/vplants.html"> vplants packages </a> |&nbsp;</li><li><a href="../contents.html"> Documentation </a> &raquo;</li>
+          <li><a href="index.html" >1. Stocatree User Guide</a> &raquo;</li> 
+      </ul>
+    </div>
+
+    <div class="footer">
+        &copy; Copyright None.
+      Last updated on Nov 23, 2010.
+      Created using <a href="http://sphinx.pocoo.org/">Sphinx</a> 1.0.5.
+    </div>
+<div class="footer">This page uses <a href="http://analytics.google.com/">
+Google Analytics</a> to collect statistics. You can disable it by blocking
+the JavaScript coming from www.google-analytics.com.
+<script type="text/javascript">
+  (function() {
+    var ga = document.createElement('script');
+    ga.src = ('https:' == document.location.protocol ?
+              'https://ssl' : 'http://www') + '.google-analytics.com/ga.js';
+    ga.setAttribute('async', 'true');
+    document.documentElement.firstChild.appendChild(ga);
+  })();
+</script>
+</div>
+
+  </body>
+</html>

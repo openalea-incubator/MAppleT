@@ -1,0 +1,197 @@
+
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>1.5. MAppleT notes &mdash; vplants v0.9 documentation</title>
+    <link rel="stylesheet" href="../_static/openalea.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../',
+        VERSION:     '0.9',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../_static/jquery.js"></script>
+    <script type="text/javascript" src="../_static/underscore.js"></script>
+    <script type="text/javascript" src="../_static/doctools.js"></script>
+    <link rel="shortcut icon" href="../_static/oaicon.ico"/>
+    <link rel="top" title="vplants v0.9 documentation" href="../index.html" />
+    <link rel="up" title="1. Stocatree User Guide" href="index.html" />
+    <link rel="next" title="1.6. Developer information" href="developer.html" />
+    <link rel="prev" title="1.4. Differences between Lpy and LStudio" href="lpy_versus_lstudio.html" />
+ 
+<script type="text/javascript">
+  var _gaq = _gaq || [];
+  _gaq.push(['_setAccount', 'UA-4372857-3']);
+  _gaq.push(['_trackPageview']);
+</script>
+
+  </head>
+  <body>
+
+
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="developer.html" title="1.6. Developer information"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="lpy_versus_lstudio.html" title="1.4. Differences between Lpy and LStudio"
+             accesskey="P">previous</a> |</li>
+
+
+<li><a href="../../../../../../openalea/doc/_build/html/index.html"> Main home </a>  |&nbsp;</li>
+<li><a href="../../../../../../openalea/doc/_build/html/vplants.html"> vplants packages </a> |&nbsp;</li><li><a href="../contents.html"> Documentation </a> &raquo;</li>
+          <li><a href="index.html" accesskey="U">1. Stocatree User Guide</a> &raquo;</li> 
+      </ul>
+    </div>
+
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+  <h3><a href="../contents.html">Table Of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">1.5. MAppleT notes</a><ul>
+<li><a class="reference internal" href="#running-mapplet">1.5.1. Running MAppleT</a></li>
+</ul>
+</li>
+</ul>
+
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="lpy_versus_lstudio.html"
+                        title="previous chapter">1.4. Differences between Lpy and LStudio</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="developer.html"
+                        title="next chapter">1.6. Developer information</a></p>
+  <h3>This Page</h3>
+  <ul class="this-page-menu">
+    <li><a href="../_sources/user/mapplet.txt"
+           rel="nofollow">Show Source</a></li>
+  </ul>
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" size="18" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <div class="section" id="mapplet-notes">
+<h1>1.5. MAppleT notes<a class="headerlink" href="#mapplet-notes" title="Permalink to this headline">¶</a></h1>
+<p>&#8220;<em>MAppleT project aimed to bring together models of topology and geometry in a single simulation such that the architecture of an apple tree may emerge from process interactions. This integration was performed using L-systems. A mixed approach was developed based on stochastic models to simulate plant topology and mechanistic model for the geometry. The succession of growth units (GUs) along axes and
+their branching structure were jointly modelled by a hierarchical hidden Markov model. A biomechanical model, derived
+from previous studies, was used to calculate stem form at the metamer scale, taking into account the intra-year dynamics of
+primary, secondary and fruit growth. Outputs consist of 3-D mock-ups – geometric models representing the progression of
+tree form over time. To asses these models, a sensitivity analysis was performed and descriptors were compared between
+simulated and digitised trees, including the total number of GUs in the entire tree, descriptors of shoot geometry (basal
+diameter, length), and descriptors of axis geometry (inclination, curvature). In conclusion, despite some limitations,
+MAppleT constitutes a useful tool for simulating development of apple trees in interaction with gravity.</em>&#8221; <a class="reference internal" href="biblio.html#ref1">[ref1]</a></p>
+<div class="section" id="running-mapplet">
+<h2>1.5.1. Running MAppleT<a class="headerlink" href="#running-mapplet" title="Permalink to this headline">¶</a></h2>
+<p>MAppleT is written in C++. It also provides a Lsystem, which can be launch in L-Studio.
+The original code of MAppleT is available in the directory <strong>./src/cpp.</strong> where the original
+code written by Colin Smith was committed in the archive in January 2007. In order to use the code,
+one&#8217;s need to compile it and therefore to have third-party libraries (for statistical analysis, VPlants.Stat_Tool).
+In the original code, a fork of VPlants.Stat_tool and VPlants.Sequence_analysis was required. This fork
+is not available anymore. However, by changing the input files (e.g. fmodel_fuji_16_65_y3_96.txt),
+the current code of VPlants.Stat_tool and VPlants.Sequence_Analysis seems to work. Therefore, there
+is no need to use the fork anymore and the current version of MAppleT can be linked with the i
+current version of VPlants (Dec 2009).</p>
+<div class="topic">
+<p class="topic-title first">compilation note</p>
+<p>Under Windows, one should first install VPlants and then change the header within the cpp/hpp files.</p>
+<p>Then, use the <strong>go.bat</strong> script. You may need to change the Makefile according to your environments.</p>
+</div>
+<div class="admonition warning">
+<p class="first admonition-title">Warning</p>
+<p class="last">See the <strong>description.txt</strong> file in ./src/cpp for extra information,
+in particular about compilation and L-studio version to be used</p>
+</div>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last">Modifications of the original code (e.g. the headers) was required to
+allow the compilation to work with VPlants. In addition, the input data files
+had matrices with zero columns that prevent the code to run. The modifications
+were committed in Nov 2009.</p>
+</div>
+<p><em>Section author: Thomas Cokelaer</em></p>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="developer.html" title="1.6. Developer information"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="lpy_versus_lstudio.html" title="1.4. Differences between Lpy and LStudio"
+             >previous</a> |</li>
+
+
+<li><a href="../../../../../../openalea/doc/_build/html/index.html"> Main home </a>  |&nbsp;</li>
+<li><a href="../../../../../../openalea/doc/_build/html/vplants.html"> vplants packages </a> |&nbsp;</li><li><a href="../contents.html"> Documentation </a> &raquo;</li>
+          <li><a href="index.html" >1. Stocatree User Guide</a> &raquo;</li> 
+      </ul>
+    </div>
+
+    <div class="footer">
+        &copy; Copyright None.
+      Last updated on Nov 23, 2010.
+      Created using <a href="http://sphinx.pocoo.org/">Sphinx</a> 1.0.5.
+    </div>
+<div class="footer">This page uses <a href="http://analytics.google.com/">
+Google Analytics</a> to collect statistics. You can disable it by blocking
+the JavaScript coming from www.google-analytics.com.
+<script type="text/javascript">
+  (function() {
+    var ga = document.createElement('script');
+    ga.src = ('https:' == document.location.protocol ?
+              'https://ssl' : 'http://www') + '.google-analytics.com/ga.js';
+    ga.setAttribute('async', 'true');
+    document.documentElement.firstChild.appendChild(ga);
+  })();
+</script>
+</div>
+
+  </body>
+</html>
