@@ -19,6 +19,7 @@
 
 """
 import datetime
+import os.path as op
 
 output_options = {
     'sequences' : True,
@@ -53,89 +54,71 @@ class output(object):
     # The "directory" parameter was added by Han on 17-04-2011
     # to allow saving the output files to an designated directory
     def __init__(self, directory='', filename=None, verbose=False, frequency=1., tag=None):
-        self.file = None
-        self.basename = filename
-        self.directory = directory
-        self.tag = tag
-        self.filename = None
-        self.build_filename()
+      self.file = None
+      self.basename = filename
+      self.directory = directory
+      self.tag = tag
+      self.filename = None
+      self.build_filename()
 
-        self.verbose = verbose
-        self.frequency = frequency
-        self.elapsed = datetime.timedelta(0)
-        #by product
-        self.period = 365.0 / self.frequency
+      self.verbose = verbose
+      self.frequency = frequency
+      self.elapsed = datetime.timedelta(0)
+      #by product
+      self.period = 365.0 / self.frequency
 
-    #The original version of build_filename() method (before 19-04-2011):
-    """
-    def build_filename(self, date=None):
-        #create the filename given an optional date that is used as a tag
-        self.filename = self.basename
-        if date:
-            self.filename += '_'+date
-
-        if self.tag:
-            self.filename += '_'+self.tag
-
-        self.filename += '.dat'
-    """
 
     #The build_filename() method was rewritten by Han on 19-04-2011
     def build_filename(self, extra=None):
-        self.filename = self.basename
-        if (extra != None) and (extra != ''):
-            self.filename += '_' + extra
+      """
+      create the filename given an optional extra suffix that is used before the tag
+      """
+      self.filename = self.basename
+      if (extra != None) and (extra != ''):
+        self.filename += '_' + extra
 
-        if self.tag:
-            self.filename += '_'+self.tag
+      if self.tag:
+        self.filename += '_'+self.tag
 
-        self.filename += '.dat'
+      self.filename += '.dat'
 
     def init(self):
-        """open the file"""
-        if self.file == None or self.file.closed:
-            if self.verbose:
-                print 'opening file %s' % self.filename
-            self.file = open(self.directory + self.filename, 'w')
-        else:
-            if self.verbose:
-                print 'File already openned !! Close it first.'
+      """open the file object"""
+      if self.file == None or self.file.closed:
+        if self.verbose:
+          print 'opening file %s' % self.filename
+        self.file = open(op.join(self.directory, self.filename), 'w')
+      else:
+        if self.verbose:
+          print 'File already openned !! Close it first.'
 
     def close(self):
-        """close the file"""
-        if self.file:
-            if self.verbose:
-                print 'Closing file %s ' % self.filename
-            self.file.close()
-            self.file= None
+      """close the file object"""
+      if self.file:
+        if self.verbose:
+          print 'Closing file %s ' % self.filename
+        self.file.close()
+        self.file= None
 
     def advance(self, dt):
-        """increment the elapsed time and return True if time has reached a period
+      """increment the elapsed time and return True if time has reached a period
 
-        :param dt: the time increment
-        """
-        if type(dt) != datetime.timedelta:
-            dt = datetime.timedelta(dt)
-        self.elapsed += dt
-        if self.elapsed.days >= self.period:
-            self.elapsed = datetime.timedelta(0.)
-            return True
-        else:
-            return False
+      :param dt: the time increment
+      """
+      if type(dt) != datetime.timedelta:
+        dt = datetime.timedelta(dt)
+      self.elapsed += dt
+      if self.elapsed.days >= self.period:
+        self.elapsed = datetime.timedelta(0.)
+        return True
+      else:
+        return False
 
 
     def save(self):
-        """output must have a save method to write the date into the file"""
-        raise NotImplementeError()
+      """output must have a save method to write the date into the file"""
+      raise NotImplementeError()
 
-
-
-class leaves():
-    """Defines the output filename to store leaves information"""
-    file = None
-    filename = 'leaves'
-    def __init__(self):
-        pass
 
 class trunk(output):
     """Defines the output filename to store trunk information"""
@@ -179,7 +162,7 @@ class counts(output):
 
     def save(self, date=None):
         if self.file is None:
-            raise IOError("File is not openned. USe init() method.")
+            raise IOError("File is not openned. Use init() method.")
 
         if date:
             self.file.write("%s\t %s\t %s\t %s\t 0\t %s\t %s\t %s\t %s\n" % (date, self.shorts, self.longs, self.florals, self.mediums, self.len_16_to_25, self.len_26_to_40, self.len_over_40))
@@ -320,11 +303,9 @@ MTG:
 TOPO\t\t\t\t\t\t\t\t\t\t\tTopDia\tXX\tYY\tZZ\tyear\tobservation\tlength\tleaf_state\tleaf_area\tta_pgl\tsa_pgl\tstar_pgl\tunit_id\tbranch_id\tlstring_id\tzone\tradius\tfruit
 """
 
-"""
-MTG:
+#MTG:
 #TOPO\t\t\t\t\t\t\t\t\t\t\tTopDia\tXX\tYY\tZZ\tdate\tyear\tobservation\tlength\tleaf_state\tleaf_area\tta_pgl\tsa_pgl\t star_pgl\tunit_id\tbranch_id
-TOPO\t\t\t\t\t\t\t\t\t\t\tTopDia\tXX\tYY\tZZ\tyear\tlength
-"""
+#TOPO\t\t\t\t\t\t\t\t\t\t\tTopDia\tXX\tYY\tZZ\tyear\tlength
 
 #% MTG().write_trailing_tabs()
 
@@ -333,11 +314,11 @@ class mtg(output):
     """a simple MTG classes to save output in MTG format."""
 
     def __init__(self, directory='', filename="", frequency=2., verbose=False, tag=None):
-        output.__init__(self, directory=directory, filename=filename, verbose=verbose, frequency=frequency, tag=tag)
-        self.columns        = 10;
-        self.current_column =  0;
-        self.header = header
-        self.filename = filename
+      output.__init__(self, directory=directory, filename=filename, verbose=verbose, frequency=frequency, tag=tag)
+      self.columns        = 10;
+      self.current_column =  0;
+      self.header = header
+      self.filename = filename
 
     #Added by Han on 12-12-2011
     def build_filename(self, extra=""):
@@ -460,28 +441,24 @@ class Data(object):
 
     """
     def __init__(self, options, revision=None, dir="./"):
-        self.options = options
-        self.revision = revision
-        self.lstring = None
-        self.verbose = options.general.verbose
+      self.options = options                        #The options as defined in the .ini file and opend with ConfigParams
+      self.revision = revision                      #A number manually generated ?
+      self.lstring = None                           #The lstring from lpy ?
+      self.verbose = options.general.verbose        #Bool defined in the options, i.e. .ini file
+      self.dir = dir# This is to store the results under a designated directory rather than
 
-        # This is to store the results under a designated directory rather than
-        # under "share/data/" only.
-        #if self.options.general.batchmode == True:
-        #    self.dir = self.options.general.batch_dir
-        #else:
-        #    self.dir= self.options.general.single_dir
-        self.dir = dir
-
-        self.l_string =l_string(directory=self.dir, tag=options.general.tag, verbose=self.verbose)
-        #self.light_interception=light_interception(tag=options.general.tag, verbose=self.verbose)
-        self.counts = counts(directory=self.dir, tag=options.general.tag, verbose=self.verbose)
-        self.trunk = trunk(directory=self.dir, tag=options.general.tag, verbose=self.verbose)
-        self.sequences = sequences(directory=self.dir, tag=options.general.tag, verbose=self.verbose)
-        self.mtg = mtg(directory=self.dir, tag=options.general.tag, verbose=self.verbose)
-        self.time = []
-        self.nfruits = []
-        self.mass_fruits = []
+      #These are output objects added to the Data class, it may be more interesting to be able to add them
+      #dynamically. Will require modifications in init and close_all
+      self.l_string =l_string(directory=self.dir, tag=options.general.tag, verbose=self.verbose)
+      self.counts = counts(directory=self.dir, tag=options.general.tag, verbose=self.verbose)
+      self.trunk = trunk(directory=self.dir, tag=options.general.tag, verbose=self.verbose)
+      self.sequences = sequences(directory=self.dir, tag=options.general.tag, verbose=self.verbose)
+      self.mtg = mtg(directory=self.dir, tag=options.general.tag, verbose=self.verbose)
+      #self.light_interception=light_interception(tag=options.general.tag, verbose=self.verbose)
+      
+      self.time = []
+      self.nfruits = []
+      self.mass_fruits = []
 
 
     def save(self):

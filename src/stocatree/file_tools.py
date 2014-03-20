@@ -374,20 +374,20 @@ class Cp_Lstring(object):
         #print len(lstring), len(self.pseudo_lstring)
 
         for i in range(len(self.pseudo_lstring)):
-            try:
-                for attr in vars(self.pseudo_lstring[i][0]).keys():
-                    if attr in vars(self.lstring[i][0]).keys():
-                        if attr == "leaf_state":
-                            self.pseudo_lstring[i][0].leaf_state = self.lstring[i][0].leaf_state
-                            self.pseudo_lstring[i][0].leaf.state = self.lstring[i][0].leaf.state
-                            #print i, self.lstring[i][0].leaf.state, self.pseudo_lstring[i][0].leaf.state, self.pseudo_lstring[i-1][0].leaf.state
-                        else:
-                            vars(self.pseudo_lstring[i][0])[attr] = vars(self.lstring[i][0])[attr]
-                            #print i, self.lstring[i][0].leaf_area, self.pseudo_lstring[i][0].leaf_area
-                    else:
-                        continue
-            except:
+          try:
+            for attr in vars(self.pseudo_lstring[i][0]).keys():
+              if attr in vars(self.lstring[i][0]).keys():
+                if attr == "leaf_state":
+                  self.pseudo_lstring[i][0].leaf_state = self.lstring[i][0].leaf_state
+                  self.pseudo_lstring[i][0].leaf.state = self.lstring[i][0].leaf.state
+                  #print i, self.lstring[i][0].leaf.state, self.pseudo_lstring[i][0].leaf.state, self.pseudo_lstring[i-1][0].leaf.state
+                else:
+                  vars(self.pseudo_lstring[i][0])[attr] = vars(self.lstring[i][0])[attr]
+                  #print i, self.lstring[i][0].leaf_area, self.pseudo_lstring[i][0].leaf_area
+              else:
                 continue
+          except:
+            continue
 
         """
         for i in range(len(self.pseudo_lstring)):

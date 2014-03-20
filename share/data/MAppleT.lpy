@@ -65,7 +65,6 @@ from openalea.stocatree.temperature_effects import Tp_date
 from openalea.stocatree.srandom import boolean_event
 from openalea.stocatree.csv import ExprecCSV
 from openalea.stocatree.rw_tools import ensureLocalDir, Recorder
-from openalea.stocatree.file_tools import Cp_Lstring
 
 
 # This is to use the scene to calculate the leaf area, silhouette area as well as STAR
@@ -427,7 +426,7 @@ def EndEach(lstring,scene):
               useGroup(statistics)
               simulation.phase = statistics
               forward()
-              #frameDisplay(False)
+              frameDisplay(False)
 
 
         elif simulation.phase == physics:
@@ -438,7 +437,8 @@ def EndEach(lstring,scene):
         elif simulation.phase == statistics:
             useGroup(update_structure)
             simulation.phase = update_structure
-            frameDisplay(False)
+            if numerical_resolution_counter != 0:
+              frameDisplay(False)
         elif simulation.phase == update_structure:
 
           ###########################################################################
@@ -536,22 +536,6 @@ def EndEach(lstring,scene):
               if verbose:
                 print "Saving MTG as: ", data.mtg.filename
               data.mtg.save(lstring, simulation.date, tree.trunk_radius)
-
-            # save the lstring
-            if options.output.l_string :
-              ensureLocalDir(sub_dir)
-              data.l_string.build_filename( op.join(output_directory, "{0}_lstring".format(current_experiment) ) )
-              cpl = Cp_Lstring(lstring)
-              cpl.copy()
-              pseudo_lstring = cpl.pseudo_lstring
-
-              #Added by Han on 01-03-2012
-              #Pickle the lstring data structure with information
-              lpk = open( op.join(sub_dir, current_experiment + ".lpk"), "w")
-              cPickle.dump(pseudo_lstring, lpk)
-              lpk.close()
-              data.l_string.init()
-              data.l_string.save(lstring, simulation.date)
 
             # save the counts of ?
             if options.output.counts :
@@ -834,17 +818,7 @@ apex(a):
 group 3:
 
 apex(a):
-    #tp = True or (a.get_observation() == 'sylleptic_short' or a.get_observation() == 'sylleptic_medium' or a.get_observation() == 'sylleptic_large')
 
-    #if (a.sequence_position == 0 and a.get_observation()!='dormant' and
-      #(a.parent_observation == 'floral' or simulation.events.bud_break.active)):
-    #This condition was modified by Han in May 2011 to enable the temperature effect on bud break
-    #if (a.sequence_position == 0 and a.get_observation()!='dormant' and (a.parent_observation == 'floral' or bud_break)) or (a.get_observation() == ('sylleptic_short' or 'sylleptic_medium' or 'sylleptic_large')):
-    #if (a.sequence_position == 0 and a.get_observation()!='dormant' and (a.parent_observation == 'floral' or bud_break)) or (a.get_observation() == 'sylleptic_short' or a.get_observation() == 'sylleptic_medium' or a.get_observation() == 'sylleptic_large'):
-    #if (a.sequence_position == 0 and a.get_observation()!='dormant' and (a.parent_observation == 'floral' or bud_break)) or (a.get_observation() == 'small' or a.get_observation() == 'medium' or a.get_observation() == 'large'):
-    #if (a.sequence_position == 0 and a.get_observation()!='dormant' and (a.parent_observation == 'floral' or bud_break)):
-    #if (a.sequence_position == 0 and a.get_observation()!='dormant' and (a.parent_observation == 'floral' or bud_break or ((a.get_observation() == 'small' or a.get_observation() == 'medium' or a.get_observation() == 'large') and a.parent_observation == "trunk"))):
-    #if (a.sequence_position == 0 and a.get_observation()!='dormant' and (a.parent_observation == 'floral' or bud_break or (sylleptic_year and a.year < simulation.date.year and (a.get_observation() == 'small' or a.get_observation() == 'medium' or a.get_observation() == 'large')))):
     if(a.sequence_position == 0 and a.get_observation()!='dormant' and \
        (a.parent_observation == 'floral' or bud_break or \
        (sylleptic_year and a.year < simulation.date.year and (a.get_observation() == 'small' or a.get_observation() == 'medium' or a.get_observation() == 'large')))):
@@ -863,12 +837,6 @@ apex(a):
           a.parent_observation = 'large'
           a.set_observation('large')
 
-      #a.sequence  = generate_sequence(a.get_observation(),\
-      #    markov, simulation.date.year, options.stocatree.second_year_draws,
-      #    select_trunk=[int(options.stocatree.select_trunk)])
-      #The statement above for "a.sequence" was changed to the following, on 26-04-2012, by Han
-      #where select_trunk=[int(options.stocatree.select_trunk)]
-      #was changed to select_trunk=[int(current_experiment)]
       a.sequence  = generate_sequence(a.get_observation(),\
           markov, simulation.date.year, options.stocatree.second_year_draws,
           select_trunk=[int(options.stocatree.select_trunk)])
@@ -885,19 +853,13 @@ apex(a):
           a.set_observation(terminal_fate(simulation.date.year,a.get_observation()))
 
 
-      #a.radius = 0
-      #Modified by Han on 05-03-2012, according to the discussion with
-      #Evelyne on 27-02-2012
-      #a.radius = a.maximum_size
-      #a.max_terminal_radius_target()
-      #Changed back to original by Han on 21-03-2012
       a.radius = 0
       a.max_terminal_radius_target()
 
       #CHANGES tree.growth_units
-      tree.growth_units += 1
       #record the unit id that this apex belongs to (the id values start from 0)
-      a.parent_unit_id = tree.growth_units-1
+      a.parent_unit_id = tree.growth_units
+      tree.growth_units += 1
 
       #update counts
       if options.output.counts:
@@ -937,9 +899,9 @@ apex(a):
     else:
         produce apex(a)
 
-# Add new apices (terminal and lateral) and metamers
-# to the structure
-#group update_structure
+#================= GROUP 4 : Update Structure ==================#
+# Add new terminal and lateral apices and metamers              #
+#===============================================================#
 
 group 4:
 
@@ -950,6 +912,8 @@ metamer(m) < apex(a):
     if (a.sequence_position > 0 and m.age >= options.internode.plastochron):
         a.sequence_position-=1
         flower = (a.sequence_position == 0 and a.parent_observation=='floral')
+
+        #If metamer m was also produced by the same apex, i.e. its year == simulation.year, then increase metamer number
         if m.year == simulation.date.year:
             number = m.number + 1
         else:
@@ -1070,6 +1034,11 @@ metamer(m):
     #if (m.observation!= 'dormant' and  not m.developped and bud_break):
     #if (m.observation!= 'dormant' and  not m.developped and (bud_break or ((m.observation == 'small' or m.observation == 'medium' or m.observation == 'large') and m.parent_observation == "trunk"))):
 
+
+
+
+    ## Creating new lateral apex if metamer is not dormant, not already developed and if it's budbreak or trunk sylleptic
+
     if (m.observation!= 'dormant' and  not m.developped and (bud_break or ((m.observation == 'small' or m.observation == 'medium' or m.observation == 'large') and m.parent_observation == "trunk" and m.sylleptic == True))):
         m.developped = True
         hlu = rotate_frame_at_branch(m.hlu, m.branching_angle, m.phyllotactic_angle)
@@ -1097,7 +1066,8 @@ metamer(m):
         produce metamer(m)
 
 
-# group pruning forward
+#================= GROUP 5 : Pruning Forward ===================#
+#===============================================================#
 group 5:
 
 X < metamer(m):
@@ -1129,7 +1099,8 @@ X:
     produce
 
 
-# group pruning forward
+#================= GROUP 6 : Pruning Backward ==================#
+#===============================================================#
 group 6:
 
 metamer(m) >> metamer(mr):
@@ -1138,12 +1109,9 @@ metamer(m) >> metamer(mr):
     m.to_prune = False
     produce metamer(m)
 
-#$X(toto) :
-#    print "Cut cut cut", toto.position()
-#    #Stop()
-#    produce ;@O(0.5)
 
-#group writelstring
+#================== GROUP 7 : Write LString ====================#
+#===============================================================#
 group 7:
 
 #thestring = ''
@@ -1178,14 +1146,28 @@ EB():
 
 #print thestring
 
+
+#===============================================================#
+#               START OF INTERPRETATION RULES                   #
+#               Graphical rendering of the tree                 #
+#===============================================================#
+
 group 0:
-#// Graphical rendering of the tree
 interpretation:
 
 root():
     dateLabel = str(simulation.date.year) + '-' + str(simulation.date.month) + '-' + str(simulation.date.day)
-    #produce SB() f(-3) SetColor(colors.background) Label(dateLabel) f(3) SetColor(colors.ground) PglShape(ground_surface, 10.0) EB();
-    produce SB() f(-3) SetColor(colors.background) f(3) SetColor(colors.ground) PglShape(ground_surface, 10.0) EB();
+
+    #Cylinder replaces the ground shape, size has no signification yet, should reflect canopy size or something else
+    if options.general.pruning:
+      produce SB() SetColor(colors.ground) PglShape(pgl.Cylinder(5,0.5,True,50)) EB();
+      #produce SB() SetColor(colors.ground) PglShape(ground_surface, 10.0) EB();
+    else:
+      #produce SB() SetColor(colors.ground) PglShape(pgl.Cylinder(5,0.5,True,50)) EB();
+      #produce SB() f(-3) SetColor(colors.background) Label(dateLabel) f(3) SetColor(colors.ground) PglShape(pgl.Cylinder(5,0.5,True,50)) EB();
+      produce SB() SetColor(colors.background) @g(pgl.Text(dateLabel,(5,5,0.9), True)) SetColor(colors.ground) PglShape(pgl.Cylinder(5,0.5,True,50)) EB();
+      #produce SB() f(-3) SetColor(colors.background) Label(dateLabel) f(3) SetColor(colors.ground) PglShape(ground_surface, 10.0) EB();
+
     #if options.general.pruning:
     #  produce SB() f(-3) SetColor(colors.background) @g(pgl.Text("Pruning",(5,5,0.9), True) ) f(3) SetColor(colors.ground) PglShape(ground_surface, 5.0) EB()
     #else:
@@ -1282,6 +1264,12 @@ endgroup
 homomorphism:
 
 endlsystem
+#===============================================================#
+#                     END OF LSYSTEM RULES                      #
+#               Everything below is generate by Lpy             #
+#===============================================================#
+
+
 ###### INITIALISATION ######
 
 __lpy_code_version__ = 1.1
