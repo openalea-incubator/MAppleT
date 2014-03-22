@@ -463,9 +463,6 @@ class metamer_data(object):
             self.position = left_metamer_position + self.hlu.heading \
                 * self.length
 
-
-
-
 def reaction_wood_target(up, heading, previous_heading):
     r"""Reaction wood target
 

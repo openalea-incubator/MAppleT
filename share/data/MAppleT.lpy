@@ -5,7 +5,7 @@ __revision__ = " $Id: stocatree.lpy 11526 2011-12-06 14:48:34Z liqihan $ "
 # First, read the configuration file
 from openalea.plantik.tools.config import ConfigParams
 if "options" not in globals().keys():
-  print "Reading MAppleT.ini file myself, if not present...crash"
+  print "Reading MAppleT.ini file mym, if not present...crash"
   options = ConfigParams('MAppleT.ini')
 
 ###### FIXING THE RANDOM SEED ##########################
@@ -245,6 +245,15 @@ def Start():
       f.write("FALSE")
       f.close()
 
+    #Variables to get the extension of the ground projected canopy
+    global can_x_max
+    global can_x_min
+    global can_y_max
+    global can_y_min
+    can_x_max=0
+    can_x_min=0
+    can_y_max=0
+    can_y_min=0
 
 def StartEach():
     #Added by Han on 06-12-2011
@@ -465,7 +474,6 @@ def EndEach(lstring,scene):
             #-----------------------------------------------------------------------#
             #                        Light Interception                             #
             #-----------------------------------------------------------------------#
-              print "Today: ", simulation.date
 
               sky = dl.sd.skyTurtle()
               wgsum = math.fsum([sky[i][2] for i in range(len(sky))])
@@ -823,8 +831,8 @@ apex(a):
        (a.parent_observation == 'floral' or bud_break or \
        (sylleptic_year and a.year < simulation.date.year and (a.get_observation() == 'small' or a.get_observation() == 'medium' or a.get_observation() == 'large')))):
       #print "Apex with obs {0} and parent obs {1} generate sequence:".format(a.get_observation(), a.parent_observation)
-      old_observation = a.get_observation()
-      a.parent_observation = old_observation
+      print("Group 3: New sequence of type {0} from parent_obs {2} @ {1}".format(a._observation, simulation.date, a.parent_observation))
+      a.parent_observation = a.get_observation()
 
       #Added by Han on 15-05-2012
       if a.parent_observation == 'sylleptic_short':
@@ -950,7 +958,9 @@ metamer(m) < apex(a):
         produce apex(a)
 
 
+#Case of the first metamer of a new GU
 apex(a):
+
     #if Debug:print 'APEX seq pos=',a.sequence_position
     #if (a.sequence_position > 0):
     if (a.sequence_position > 0):
@@ -1061,6 +1071,7 @@ metamer(m):
             a.parent_fbr_id = tree.first_branches
         else:
             a.parent_fbr_id = m.parent_fbr_id
+        print("Group 4: Generate lateral Apex @ {}".format(simulation.date))
         produce metamer(m) SB() branch() apex(a) EB()
     else:
         produce metamer(m)
@@ -1158,22 +1169,38 @@ interpretation:
 root():
     dateLabel = str(simulation.date.year) + '-' + str(simulation.date.month) + '-' + str(simulation.date.day)
 
-    #Cylinder replaces the ground shape, size has no signification yet, should reflect canopy size or something else
+    #Cylinder replaces the ground shape, size is ground radius that gives 
+    #an estimate of the extension of the canopy projection on the ground
+    # *5.0  = *10/2. [unit conversion / diameter2radius] 
+    ground_radius = max(1.0,  (can_x_max - can_x_min)*5.0, (can_y_max - can_y_min)*5.0 )
+
     if options.general.pruning:
       produce SB() SetColor(colors.ground) PglShape(pgl.Cylinder(5,0.5,True,50)) EB();
       #produce SB() SetColor(colors.ground) PglShape(ground_surface, 10.0) EB();
     else:
-      #produce SB() SetColor(colors.ground) PglShape(pgl.Cylinder(5,0.5,True,50)) EB();
       #produce SB() f(-3) SetColor(colors.background) Label(dateLabel) f(3) SetColor(colors.ground) PglShape(pgl.Cylinder(5,0.5,True,50)) EB();
-      produce SB() SetColor(colors.background) @g(pgl.Text(dateLabel,(5,5,0.9), True)) SetColor(colors.ground) PglShape(pgl.Cylinder(5,0.5,True,50)) EB();
+      produce SB() SetColor(colors.background) @g(pgl.Text(dateLabel,(5,5,0.9), True)) SetColor(colors.ground) PglShape(pgl.Cylinder(ground_radius,0.5,True,50)) EB();
       #produce SB() f(-3) SetColor(colors.background) Label(dateLabel) f(3) SetColor(colors.ground) PglShape(ground_surface, 10.0) EB();
 
-    #if options.general.pruning:
-    #  produce SB() f(-3) SetColor(colors.background) @g(pgl.Text("Pruning",(5,5,0.9), True) ) f(3) SetColor(colors.ground) PglShape(ground_surface, 5.0) EB()
-    #else:
-    #  produce SB() f(-3) SetColor(colors.background) @g(pgl.Text(dateLabel,(5,5,0.9), True) ) f(3) SetColor(colors.ground) PglShape(ground_surface, 5.0) EB()
     
 metamer(m):
+
+    #Updating the ground projection extension of the canopy
+    global can_x_max
+    global can_x_min
+    global can_y_max
+    global can_y_min
+
+    if m.position.x > can_x_max:
+      can_x_max = m.position.x
+    if m.position.x < can_x_min:
+      can_x_min = m.position.x
+    if m.position.y > can_y_max:
+      can_y_max = m.position.y
+    if m.position.y < can_y_min:
+      can_y_min = m.position.y
+
+
     #print 'interpretation called', getIterationNb()
     shoot_colour = colors.bark
     if options.stocatree.render_mode == 'bark':
