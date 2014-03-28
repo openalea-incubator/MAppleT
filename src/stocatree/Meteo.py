@@ -1,4 +1,5 @@
-#!/usr/bin/env python
+#Je rajoute un commentaire bidon
+#!/usr/bin/env python et puis je modifie aussi cette ligne
 import numpy   as np
 import datetime
 import time
@@ -120,3 +121,13 @@ def pri():
 def convert_datetime_date_datetime_datetime(date) :
     d = datetime.datetime(date.year,date.month,date.day)
     return(d)
+
+class Storm(object):
+
+  def __init__(self):
+    lightnings = 2
+    thunder = 2
+
+  def startFire(self):
+    pass
+
