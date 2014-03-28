@@ -101,7 +101,7 @@ simulation = SimulationStocatree(dt=options.general.time_step,
 
 #date = datetime.datetime.strptime(date, "%Y-%m-%d")
 #simulation.events.add_event('star', datetime.datetime.strptime(options.output.light_date, "%Y-%m-%d"), duration=datetime.timedelta(0), periodic=False)
-simulation.events.add_event('star', datetime.datetime.strptime(options.output.light_date, "%Y-%m-%d"), duration=datetime.timedelta(0), periodic=options.output.light_yearly)
+simulation.events.add_event('star', datetime.datetime.strptime(options.output.light_date, "%Y-%m-%d"), duration=datetime.timedelta(1), periodic=options.output.light_yearly)
 
 
 # Read PGLshape surfaces
@@ -258,7 +258,13 @@ def Start():
 def StartEach():
     #Added by Han on 06-12-2011
     #to allow the scene can be directly saved in EndEach()
-    #frameDisplay(True)
+
+    #if simulation.phase == update_structure and ( (simulation.date.day % options.stocatree.dt_biomeca == 0 and numerical_resolution_counter == 1) or numerical_resolution_counter == 0):
+    if simulation.phase == update_structure and numerical_resolution_counter == 0:
+      frameDisplay(True)
+    else:
+      frameDisplay(False)
+    #frameDisplay(False)
 
     #Added by Han on 23-05-2011
     # to prevent one processor from using wrong information that should belong to another processor
@@ -349,10 +355,9 @@ def StartEach():
         sylleptic_year = False
 
 
-
-
 def EndEach(lstring,scene):
 
+    print("{2} Phase {0} with NC= {1}".format(simulation.phase, numerical_resolution_counter, simulation.date))
     #global current_experiment
 
     #if simulation.date > simulation.ending_date:
@@ -383,7 +388,7 @@ def EndEach(lstring,scene):
             useGroup(update_parameters)
             simulation.phase = update_parameters
             forward()
-            frameDisplay(False)
+            #frameDisplay(False)
 
         elif simulation.phase == update_parameters:
             """
@@ -422,8 +427,8 @@ def EndEach(lstring,scene):
               numerical_resolution_counter += 1
               useGroup(physics)
               simulation.phase = physics
+              #frameDisplay(False)
               backward()
-              frameDisplay(False)
 
               if numerical_resolution_counter < simulation.rotation_convergence.steps:
                 simulation.dt = 0.0 # days
@@ -434,20 +439,23 @@ def EndEach(lstring,scene):
             else:
               useGroup(statistics)
               simulation.phase = statistics
+              #frameDisplay(False)
               forward()
-              frameDisplay(False)
 
 
         elif simulation.phase == physics:
             useGroup(statistics)
             simulation.phase = statistics
             forward()
-            frameDisplay(False)
+            #frameDisplay(False)
         elif simulation.phase == statistics:
             useGroup(update_structure)
             simulation.phase = update_structure
-            if numerical_resolution_counter != 0:
-              frameDisplay(False)
+            #if simulation.date.day % options.stocatree.dt_biomeca == 0:  
+            #frameDisplay(False)
+            #if numerical_resolution_counter != 0:
+            #  print('NOT DISPLAYING FRAME - {}'.format(numerical_resolution_counter))
+            #  frameDisplay(False)
         elif simulation.phase == update_structure:
 
           ###########################################################################
@@ -455,7 +463,6 @@ def EndEach(lstring,scene):
           # interception can be computed                                            #
           ###########################################################################
 
-          
           #Harvesting
           if simulation.events.harvest.active:
             tree.fruits_harvested = tree.fruits
@@ -567,18 +574,18 @@ def EndEach(lstring,scene):
 
               useGroup(writelstring)
               simulation.phase = writelstring
-              frameDisplay(False)
+              #frameDisplay(False)
 
             else:
               useGroup(update_parameters)
               simulation.phase = update_parameters
-              frameDisplay(False)
+              #frameDisplay(False)
 
           else:
 
             useGroup(update_parameters)
             simulation.phase = update_parameters
-            frameDisplay(False)
+            #frameDisplay(False)
 
 
         elif simulation.phase == writelstring:
@@ -606,7 +613,7 @@ def EndEach(lstring,scene):
 
           useGroup(update_parameters)
           simulation.phase = update_parameters
-          frameDisplay(False)
+          #frameDisplay(False)
 
         else:
             ValueError('must not enter here')
@@ -1302,337 +1309,349 @@ endlsystem
 __lpy_code_version__ = 1.1
 
 def __initialiseContext__(context):
-  import openalea.plantgl.all as pgl
-  Color_0 = pgl.Material("Color_0" , ambient = (19,19,19) , diffuse = 0 , )
-  Color_0.name = "Color_0"
-  context.turtle.setMaterial(0,Color_0)
-  Color_1 = pgl.Material("Color_1" , ambient = (255,0,0) , diffuse = 1 , )
-  Color_1.name = "Color_1"
-  context.turtle.setMaterial(1,Color_1)
-  Color_2 = pgl.Material("Color_2" , ambient = (0,35,35) , diffuse = 7.28571 , )
-  Color_2.name = "Color_2"
-  context.turtle.setMaterial(2,Color_2)
-  Color_3 = pgl.Material("Color_3" , ambient = (0,0,27) , diffuse = 9.44444 , )
-  Color_3.name = "Color_3"
-  context.turtle.setMaterial(3,Color_3)
-  Color_4 = pgl.Material("Color_4" , ambient = (51,0,51) , diffuse = 5 , )
-  Color_4.name = "Color_4"
-  context.turtle.setMaterial(4,Color_4)
-  Color_5 = pgl.Material("Color_5" , ambient = (18,0,0) , diffuse = 14.1111 , specular = (0,0,0) , )
-  Color_5.name = "Color_5"
-  context.turtle.setMaterial(5,Color_5)
-  Color_6 = pgl.Material("Color_6" , ambient = (45,45,0) , diffuse = 5.17778 , specular = (49,23,9) , )
-  Color_6.name = "Color_6"
-  context.turtle.setMaterial(6,Color_6)
-  Color_7 = pgl.Material("Color_7" , ambient = (0,29,29) , diffuse = 8.7931 , )
-  Color_7.name = "Color_7"
-  context.turtle.setMaterial(7,Color_7)
-  Color_8 = pgl.Material("Color_8" , ambient = (0,31,0) , diffuse = 2.67742 , )
-  Color_8.name = "Color_8"
-  context.turtle.setMaterial(8,Color_8)
-  Color_9 = pgl.Material("Color_9" , ambient = (41,41,0) , diffuse = 6.21951 , specular = (0,0,0) , )
-  Color_9.name = "Color_9"
-  context.turtle.setMaterial(9,Color_9)
-  Color_10 = pgl.Material("Color_10" , ambient = (41,0,0) , diffuse = 6.21951 , )
-  Color_10.name = "Color_10"
-  context.turtle.setMaterial(10,Color_10)
-  Color_11 = pgl.Material("Color_11" , ambient = (30,0,30) , diffuse = 8.5 , )
-  Color_11.name = "Color_11"
-  context.turtle.setMaterial(11,Color_11)
-  Color_12 = pgl.Material("Color_12" , ambient = (0,0,31) , diffuse = 8.22581 , )
-  Color_12.name = "Color_12"
-  context.turtle.setMaterial(12,Color_12)
-  Color_13 = pgl.Material("Color_13" , ambient = (45,45,45) , diffuse = 5.66667 , )
-  Color_13.name = "Color_13"
-  context.turtle.setMaterial(13,Color_13)
-  Color_14 = pgl.Material("Color_14" , ambient = (63,12,13) , diffuse = 1.57143 , specular = (51,44,0) , emission = (8,8,8) , shininess = 0.47 , )
-  Color_14.name = "Color_14"
-  context.turtle.setMaterial(14,Color_14)
-  Color_15 = pgl.Material("Color_15" , ambient = (0,59,6) , diffuse = 1.59322 , )
-  Color_15.name = "Color_15"
-  context.turtle.setMaterial(15,Color_15)
-  Color_16 = pgl.Material("Color_16" , ambient = (29,7,6) , diffuse = 4.41379 , specular = (37,95,28) , )
-  Color_16.name = "Color_16"
-  context.turtle.setMaterial(16,Color_16)
-  Color_17 = pgl.Material("Color_17" , ambient = (107,59,54) , diffuse = 1.91589 , transparency = 0.17 , )
-  Color_17.name = "Color_17"
-  context.turtle.setMaterial(17,Color_17)
-  Color_18 = pgl.Material("Color_18" , ambient = (82,64,45) , diffuse = 2.56098 , specular = (0,0,0) , shininess = 0 , )
-  Color_18.name = "Color_18"
-  context.turtle.setMaterial(18,Color_18)
-  Color_19 = pgl.Material("Color_19" , ambient = (49,29,25) , diffuse = 2.55102 , specular = (0,0,0) , shininess = 0 , )
-  Color_19.name = "Color_19"
-  context.turtle.setMaterial(19,Color_19)
-  Color_20 = pgl.Material("Color_20" , ambient = (0,85,0) , diffuse = 1.38824 , )
-  Color_20.name = "Color_20"
-  context.turtle.setMaterial(20,Color_20)
-  Color_24 = pgl.Material("Color_24" , ambient = (255,247,1) , diffuse = 0.627451 , )
-  Color_24.name = "Color_24"
-  context.turtle.setMaterial(24,Color_24)
-  Color_25 = pgl.Material("Color_25" , ambient = (48,255,2) , diffuse = 0.627451 , )
-  Color_25.name = "Color_25"
-  context.turtle.setMaterial(25,Color_25)
-  Color_26 = pgl.Material("Color_26" , ambient = (1,255,255) , diffuse = 0.627451 , )
-  Color_26.name = "Color_26"
-  context.turtle.setMaterial(26,Color_26)
-  Color_27 = pgl.Material("Color_27" , ambient = (0,46,255) , diffuse = 0.627451 , )
-  Color_27.name = "Color_27"
-  context.turtle.setMaterial(27,Color_27)
-  Color_28 = pgl.Material("Color_28" , ambient = (255,0,255) , diffuse = 0.627451 , )
-  Color_28.name = "Color_28"
-  context.turtle.setMaterial(28,Color_28)
-  Color_29 = pgl.Material("Color_29" , ambient = (255,21,0) , diffuse = 0.627451 , )
-  Color_29.name = "Color_29"
-  context.turtle.setMaterial(29,Color_29)
-  Color_34 = pgl.Material("Color_34" , ambient = (0,218,32) , diffuse = 0.733945 , )
-  Color_34.name = "Color_34"
-  context.turtle.setMaterial(34,Color_34)
-  Color_35 = pgl.Material("Color_35" , ambient = (0,1,21) , diffuse = 8.14286 , )
-  Color_35.name = "Color_35"
-  context.turtle.setMaterial(35,Color_35)
-  Color_36 = pgl.Material("Color_36" , ambient = (25,0,255) , diffuse = 0 , specular = (0,0,0) , )
-  Color_36.name = "Color_36"
-  context.turtle.setMaterial(36,Color_36)
-  Color_37 = pgl.Material("Color_37" , ambient = (28,0,250) , diffuse = 0 , specular = (0,0,0) , )
-  Color_37.name = "Color_37"
-  context.turtle.setMaterial(37,Color_37)
-  Color_38 = pgl.Material("Color_38" , ambient = (32,0,246) , diffuse = 0 , specular = (0,0,0) , )
-  Color_38.name = "Color_38"
-  context.turtle.setMaterial(38,Color_38)
-  Color_39 = pgl.Material("Color_39" , ambient = (36,0,242) , diffuse = 0 , specular = (0,0,0) , )
-  Color_39.name = "Color_39"
-  context.turtle.setMaterial(39,Color_39)
-  Color_40 = pgl.Material("Color_40" , ambient = (40,0,238) , diffuse = 0 , specular = (0,0,0) , )
-  Color_40.name = "Color_40"
-  context.turtle.setMaterial(40,Color_40)
-  Color_41 = pgl.Material("Color_41" , ambient = (44,0,234) , diffuse = 0 , specular = (0,0,0) , )
-  Color_41.name = "Color_41"
-  context.turtle.setMaterial(41,Color_41)
-  Color_42 = pgl.Material("Color_42" , ambient = (48,0,229) , diffuse = 0 , specular = (0,0,0) , )
-  Color_42.name = "Color_42"
-  context.turtle.setMaterial(42,Color_42)
-  Color_43 = pgl.Material("Color_43" , ambient = (51,0,225) , diffuse = 0 , specular = (0,0,0) , )
-  Color_43.name = "Color_43"
-  context.turtle.setMaterial(43,Color_43)
-  Color_44 = pgl.Material("Color_44" , ambient = (55,0,221) , diffuse = 0 , specular = (0,0,0) , )
-  Color_44.name = "Color_44"
-  context.turtle.setMaterial(44,Color_44)
-  Color_45 = pgl.Material("Color_45" , ambient = (101,0,171) , diffuse = 0 , specular = (0,0,0) , )
-  Color_45.name = "Color_45"
-  context.turtle.setMaterial(45,Color_45)
-  Color_46 = pgl.Material("Color_46" , ambient = (63,0,213) , diffuse = 0 , specular = (0,0,0) , )
-  Color_46.name = "Color_46"
-  context.turtle.setMaterial(46,Color_46)
-  Color_47 = pgl.Material("Color_47" , ambient = (67,0,208) , diffuse = 0 , specular = (0,0,0) , )
-  Color_47.name = "Color_47"
-  context.turtle.setMaterial(47,Color_47)
-  Color_48 = pgl.Material("Color_48" , ambient = (71,0,204) , diffuse = 0 , specular = (0,0,0) , )
-  Color_48.name = "Color_48"
-  context.turtle.setMaterial(48,Color_48)
-  Color_49 = pgl.Material("Color_49" , ambient = (74,0,200) , diffuse = 0 , specular = (0,0,0) , )
-  Color_49.name = "Color_49"
-  context.turtle.setMaterial(49,Color_49)
-  Color_50 = pgl.Material("Color_50" , ambient = (78,0,196) , diffuse = 0 , specular = (0,0,0) , )
-  Color_50.name = "Color_50"
-  context.turtle.setMaterial(50,Color_50)
-  Color_51 = pgl.Material("Color_51" , ambient = (82,0,192) , diffuse = 0 , specular = (0,0,0) , )
-  Color_51.name = "Color_51"
-  context.turtle.setMaterial(51,Color_51)
-  Color_52 = pgl.Material("Color_52" , ambient = (86,0,188) , diffuse = 0 , specular = (0,0,0) , )
-  Color_52.name = "Color_52"
-  context.turtle.setMaterial(52,Color_52)
-  Color_53 = pgl.Material("Color_53" , ambient = (90,0,183) , diffuse = 0 , specular = (0,0,0) , )
-  Color_53.name = "Color_53"
-  context.turtle.setMaterial(53,Color_53)
-  Color_54 = pgl.Material("Color_54" , ambient = (94,0,179) , diffuse = 0 , specular = (0,0,0) , )
-  Color_54.name = "Color_54"
-  context.turtle.setMaterial(54,Color_54)
-  Color_55 = pgl.Material("Color_55" , ambient = (97,0,175) , diffuse = 0 , specular = (0,0,0) , )
-  Color_55.name = "Color_55"
-  context.turtle.setMaterial(55,Color_55)
-  Color_56 = pgl.Material("Color_56" , ambient = (59,0,217) , diffuse = 0 , specular = (0,0,0) , )
-  Color_56.name = "Color_56"
-  context.turtle.setMaterial(56,Color_56)
-  Color_57 = pgl.Material("Color_57" , ambient = (105,0,167) , diffuse = 0 , specular = (0,0,0) , )
-  Color_57.name = "Color_57"
-  context.turtle.setMaterial(57,Color_57)
-  Color_58 = pgl.Material("Color_58" , ambient = (109,0,162) , diffuse = 0 , specular = (0,0,0) , )
-  Color_58.name = "Color_58"
-  context.turtle.setMaterial(58,Color_58)
-  Color_59 = pgl.Material("Color_59" , ambient = (113,0,158) , diffuse = 0 , specular = (0,0,0) , )
-  Color_59.name = "Color_59"
-  context.turtle.setMaterial(59,Color_59)
-  Color_60 = pgl.Material("Color_60" , ambient = (116,0,154) , diffuse = 0 , specular = (0,0,0) , )
-  Color_60.name = "Color_60"
-  context.turtle.setMaterial(60,Color_60)
-  Color_61 = pgl.Material("Color_61" , ambient = (120,0,150) , diffuse = 0 , specular = (0,0,0) , )
-  Color_61.name = "Color_61"
-  context.turtle.setMaterial(61,Color_61)
-  Color_62 = pgl.Material("Color_62" , ambient = (124,0,146) , diffuse = 0 , specular = (0,0,0) , )
-  Color_62.name = "Color_62"
-  context.turtle.setMaterial(62,Color_62)
-  Color_63 = pgl.Material("Color_63" , ambient = (128,0,142) , diffuse = 0 , specular = (0,0,0) , )
-  Color_63.name = "Color_63"
-  context.turtle.setMaterial(63,Color_63)
-  Color_64 = pgl.Material("Color_64" , ambient = (132,0,137) , diffuse = 0 , specular = (0,0,0) , )
-  Color_64.name = "Color_64"
-  context.turtle.setMaterial(64,Color_64)
-  Color_65 = pgl.Material("Color_65" , ambient = (136,0,133) , diffuse = 0 , specular = (0,0,0) , )
-  Color_65.name = "Color_65"
-  context.turtle.setMaterial(65,Color_65)
-  Color_66 = pgl.Material("Color_66" , ambient = (140,0,129) , diffuse = 0 , specular = (0,0,0) , )
-  Color_66.name = "Color_66"
-  context.turtle.setMaterial(66,Color_66)
-  Color_67 = pgl.Material("Color_67" , ambient = (143,0,125) , diffuse = 0 , specular = (0,0,0) , )
-  Color_67.name = "Color_67"
-  context.turtle.setMaterial(67,Color_67)
-  Color_68 = pgl.Material("Color_68" , ambient = (147,0,121) , diffuse = 0 , specular = (0,0,0) , )
-  Color_68.name = "Color_68"
-  context.turtle.setMaterial(68,Color_68)
-  Color_69 = pgl.Material("Color_69" , ambient = (151,0,116) , diffuse = 0 , specular = (0,0,0) , )
-  Color_69.name = "Color_69"
-  context.turtle.setMaterial(69,Color_69)
-  Color_70 = pgl.Material("Color_70" , ambient = (155,0,112) , diffuse = 0 , specular = (0,0,0) , )
-  Color_70.name = "Color_70"
-  context.turtle.setMaterial(70,Color_70)
-  Color_71 = pgl.Material("Color_71" , ambient = (159,0,108) , diffuse = 0 , specular = (0,0,0) , )
-  Color_71.name = "Color_71"
-  context.turtle.setMaterial(71,Color_71)
-  Color_72 = pgl.Material("Color_72" , ambient = (163,0,104) , diffuse = 0 , specular = (0,0,0) , )
-  Color_72.name = "Color_72"
-  context.turtle.setMaterial(72,Color_72)
-  Color_73 = pgl.Material("Color_73" , ambient = (166,0,100) , diffuse = 0 , specular = (0,0,0) , )
-  Color_73.name = "Color_73"
-  context.turtle.setMaterial(73,Color_73)
-  Color_74 = pgl.Material("Color_74" , ambient = (170,0,96) , diffuse = 0 , specular = (0,0,0) , )
-  Color_74.name = "Color_74"
-  context.turtle.setMaterial(74,Color_74)
-  Color_75 = pgl.Material("Color_75" , ambient = (174,0,91) , diffuse = 0 , specular = (0,0,0) , )
-  Color_75.name = "Color_75"
-  context.turtle.setMaterial(75,Color_75)
-  Color_76 = pgl.Material("Color_76" , ambient = (178,0,87) , diffuse = 0 , specular = (0,0,0) , )
-  Color_76.name = "Color_76"
-  context.turtle.setMaterial(76,Color_76)
-  Color_77 = pgl.Material("Color_77" , ambient = (182,0,83) , diffuse = 0 , specular = (0,0,0) , )
-  Color_77.name = "Color_77"
-  context.turtle.setMaterial(77,Color_77)
-  Color_78 = pgl.Material("Color_78" , ambient = (186,0,79) , diffuse = 0 , specular = (0,0,0) , )
-  Color_78.name = "Color_78"
-  context.turtle.setMaterial(78,Color_78)
-  Color_79 = pgl.Material("Color_79" , ambient = (189,0,75) , diffuse = 0 , specular = (0,0,0) , )
-  Color_79.name = "Color_79"
-  context.turtle.setMaterial(79,Color_79)
-  Color_80 = pgl.Material("Color_80" , ambient = (193,0,70) , diffuse = 0 , specular = (0,0,0) , )
-  Color_80.name = "Color_80"
-  context.turtle.setMaterial(80,Color_80)
-  Color_81 = pgl.Material("Color_81" , ambient = (197,0,66) , diffuse = 0 , specular = (0,0,0) , )
-  Color_81.name = "Color_81"
-  context.turtle.setMaterial(81,Color_81)
-  Color_82 = pgl.Material("Color_82" , ambient = (201,0,62) , diffuse = 0 , specular = (0,0,0) , )
-  Color_82.name = "Color_82"
-  context.turtle.setMaterial(82,Color_82)
-  Color_83 = pgl.Material("Color_83" , ambient = (205,0,58) , diffuse = 0 , specular = (0,0,0) , )
-  Color_83.name = "Color_83"
-  context.turtle.setMaterial(83,Color_83)
-  Color_84 = pgl.Material("Color_84" , ambient = (209,0,54) , diffuse = 0 , specular = (0,0,0) , )
-  Color_84.name = "Color_84"
-  context.turtle.setMaterial(84,Color_84)
-  Color_85 = pgl.Material("Color_85" , ambient = (212,0,50) , diffuse = 0 , specular = (0,0,0) , )
-  Color_85.name = "Color_85"
-  context.turtle.setMaterial(85,Color_85)
-  Color_86 = pgl.Material("Color_86" , ambient = (216,0,45) , diffuse = 0 , specular = (0,0,0) , )
-  Color_86.name = "Color_86"
-  context.turtle.setMaterial(86,Color_86)
-  Color_87 = pgl.Material("Color_87" , ambient = (220,0,41) , diffuse = 0 , specular = (0,0,0) , )
-  Color_87.name = "Color_87"
-  context.turtle.setMaterial(87,Color_87)
-  Color_88 = pgl.Material("Color_88" , ambient = (224,0,37) , diffuse = 0 , specular = (0,0,0) , )
-  Color_88.name = "Color_88"
-  context.turtle.setMaterial(88,Color_88)
-  Color_89 = pgl.Material("Color_89" , ambient = (228,0,33) , diffuse = 0 , specular = (0,0,0) , )
-  Color_89.name = "Color_89"
-  context.turtle.setMaterial(89,Color_89)
-  Color_90 = pgl.Material("Color_90" , ambient = (232,0,29) , diffuse = 0 , specular = (0,0,0) , )
-  Color_90.name = "Color_90"
-  context.turtle.setMaterial(90,Color_90)
-  Color_91 = pgl.Material("Color_91" , ambient = (235,0,24) , diffuse = 0 , specular = (0,0,0) , )
-  Color_91.name = "Color_91"
-  context.turtle.setMaterial(91,Color_91)
-  Color_92 = pgl.Material("Color_92" , ambient = (239,0,20) , diffuse = 0 , specular = (0,0,0) , )
-  Color_92.name = "Color_92"
-  context.turtle.setMaterial(92,Color_92)
-  Color_93 = pgl.Material("Color_93" , ambient = (243,0,16) , diffuse = 0 , specular = (0,0,0) , )
-  Color_93.name = "Color_93"
-  context.turtle.setMaterial(93,Color_93)
-  Color_94 = pgl.Material("Color_94" , ambient = (247,0,12) , diffuse = 0 , specular = (0,0,0) , )
-  Color_94.name = "Color_94"
-  context.turtle.setMaterial(94,Color_94)
-  Color_95 = pgl.Material("Color_95" , ambient = (251,0,8) , diffuse = 0 , specular = (0,0,0) , )
-  Color_95.name = "Color_95"
-  context.turtle.setMaterial(95,Color_95)
-  Color_96 = pgl.Material("Color_96" , ambient = (255,0,4) , diffuse = 0 , specular = (0,0,0) , )
-  Color_96.name = "Color_96"
-  context.turtle.setMaterial(96,Color_96)
-  Color_97 = pgl.Material("Color_97" , ambient = (255,0,0) , diffuse = 0.619608 , )
-  Color_97.name = "Color_97"
-  context.turtle.setMaterial(97,Color_97)
-  Color_98 = pgl.Material("Color_98" , ambient = (149,0,0) , diffuse = 1.0604 , )
-  Color_98.name = "Color_98"
-  context.turtle.setMaterial(98,Color_98)
-  Color_99 = pgl.Material("Color_99" , ambient = (156,0,0) , diffuse = 0 , specular = (0,0,0) , )
-  Color_99.name = "Color_99"
-  context.turtle.setMaterial(99,Color_99)
-  Color_100 = pgl.Material("Color_100" , ambient = (165,24,0) , diffuse = 0 , specular = (0,0,0) , )
-  Color_100.name = "Color_100"
-  context.turtle.setMaterial(100,Color_100)
-  Color_101 = pgl.Material("Color_101" , ambient = (175,49,0) , diffuse = 0 , specular = (0,0,0) , )
-  Color_101.name = "Color_101"
-  context.turtle.setMaterial(101,Color_101)
-  Color_102 = pgl.Material("Color_102" , ambient = (185,74,0) , diffuse = 0 , specular = (0,0,0) , )
-  Color_102.name = "Color_102"
-  context.turtle.setMaterial(102,Color_102)
-  Color_103 = pgl.Material("Color_103" , ambient = (195,98,0) , diffuse = 0 , specular = (0,0,0) , )
-  Color_103.name = "Color_103"
-  context.turtle.setMaterial(103,Color_103)
-  Color_104 = pgl.Material("Color_104" , ambient = (205,123,0) , diffuse = 0 , specular = (0,0,0) , )
-  Color_104.name = "Color_104"
-  context.turtle.setMaterial(104,Color_104)
-  Color_105 = pgl.Material("Color_105" , ambient = (215,148,0) , diffuse = 0 , specular = (0,0,0) , )
-  Color_105.name = "Color_105"
-  context.turtle.setMaterial(105,Color_105)
-  Color_106 = pgl.Material("Color_106" , ambient = (225,172,0) , diffuse = 0 , specular = (0,0,0) , )
-  Color_106.name = "Color_106"
-  context.turtle.setMaterial(106,Color_106)
-  Color_107 = pgl.Material("Color_107" , ambient = (235,197,0) , diffuse = 0 , specular = (0,0,0) , )
-  Color_107.name = "Color_107"
-  context.turtle.setMaterial(107,Color_107)
-  Color_108 = pgl.Material("Color_108" , ambient = (245,222,0) , diffuse = 0 , specular = (0,0,0) , )
-  Color_108.name = "Color_108"
-  context.turtle.setMaterial(108,Color_108)
-  Color_109 = pgl.Material("Color_109" , ambient = (255,247,0) , diffuse = 0 , specular = (0,0,0) , )
-  Color_109.name = "Color_109"
-  context.turtle.setMaterial(109,Color_109)
-  context.animation_timestep = 0.0
-  context.options.setSelection('Module declaration',1)
-  context.options.setSelection('Module matching',0)
-  context.options.setSelection('Early return when no matching',0)
-  context.options.setSelection('Warning with Turtle inconsistency',0)
-  context.options.setSelection('Selection Always Required',1)
-  import openalea.plantgl.all as pgl
-  leaf_surface_patch = pgl.BezierPatch(pgl.Point4Matrix([[(0.00990099, -0.00990099, 0.990099, 1), (0.019802, 0, 0.980198, 1), (0.00990099, 0, 0.990099, 1), (0.00990099, 0, 0.990099, 1)], [(-0.128713, -0.425743, 0.752475, 1), (-0.336634, -0.158416, 0.267327, 1), (-0.336634, 0.207921, 0.267327, 1), (-0.118812, 0.425743, 0.752475, 1)], [(0, -0.742574, 0.188119, 1), (0, -0.247525, 0.188119, 1), (0, 0.247525, 0.188119, 1), (0, 0.742574, 0.188119, 1)], [(0, -0.00990099, -0.00990099, 1), (0, -0.00990099, -0.00990099, 1), (0, 0, -0.00990099, 1), (0, -0.00990099, -0.00990099, 1)]]) , ustride = 10 ,vstride = 10 ,)
-  leaf_surface_patch.name = "leaf_surface_patch"
-  petal_surface_patch = pgl.BezierPatch(pgl.Point4Matrix([[(-0.929873, -0.29792, 0.397227, 1), (-1.02015, 0, 0.550701, 1), (-1.02015, 0, 0.550701, 1), (-0.947929, 0.252781, 0.397227, 1)], [(-0.677092, -0.478478, 0.397227, 1), (-0.911817, -0.225697, -0.0451395, 1), (-0.902789, 0.225697, -0.0451395, 1), (-0.713203, 0.415283, 0.397227, 1)], [(-0.252781, -0.46945, 0.117363, 1), (-0.46945, -0.225697, 0.0993068, 1), (-0.46945, 0.225697, 0.0993068, 1), (-0.270837, 0.424311, 0.162502, 1)], [(0, 0, 0, 1), (0, 0, 0, 1), (0, 0, 0, 1), (0, 0, 0, 1)]]), ustride = 10 , vstride = 10 , )
-  petal_surface_patch.name = "petal_surface_patch"
-  ground_surface_patch = pgl.BezierPatch(pgl.Point4Matrix([[(-0.52192, -0.453843, -0.204229, 1), (-0.57865, -0.340382, -0.192883, 1), (-0.589996, 0.374421, -0.204229, 1), (-0.510574, 0.465189, -0.204229, 1)], [(-0.374421, -0.510574, -0.204229, 1), (-0.283652, -0.294998, 0.192883, 1), (-0.283652, 0.283652, 0.192883, 1), (-0.385767, 0.533266, -0.204229, 1)], [(0.272306, -0.510574, -0.192883, 1), (0.283652, -0.294998, 0.192883, 1), (0.283652, 0.272306, 0.192883, 1), (0.272306, 0.510574, -0.192883, 1)], [(0.374421, -0.419805, -0.192883, 1), (0.431151, -0.283652, -0.204229, 1), (0.419805, 0.283652, -0.192883, 1), (0.351728, 0.453843, -0.204229, 1)]]), ustride = 10, vstride = 10,)
-  ground_surface_patch.name = "ground_surface_patch"
-  Totoleaf = pgl.BezierPatch(pgl.Point4Matrix([[(0.00990099, -0.00990099, 0.990099, 1), (0.019802, 0, 0.980198, 1), (0.00990099, 0, 0.990099, 1), (0.00990099, 0, 0.990099, 1)], [(-0.11232, -0.231828, 0.676126, 1), (-0.336634, -0.158416, 0.267327, 1), (-0.336634, 0.207921, 0.267327, 1), (-0.126782, 0.25623, 0.724719, 1)], [(0.00193113, -0.364476, 0.185141, 1), (0, -0.247525, 0.188119, 1), (0, 0.247525, 0.188119, 1), (-0.000284781, 0.409708, 0.196407, 1)], [(-0.000920106, -0.000726733, -0.0134764, 1), (0, -0.00990099, -0.00990099, 1), (0, 0, -0.00990099, 1), (0, -0.00990099, -0.00990099, 1)]]), ustride = 10, vstride = 10,)
-  Totoleaf.name = "Totoleaf"
-  panel_0 = ({'active': True, 'visible': True, 'name': 'Panel 2'},[('NurbsPatch',leaf_surface_patch),('NurbsPatch',petal_surface_patch),('NurbsPatch',ground_surface_patch),('NurbsPatch',Totoleaf)])
-  parameterset = [panel_0,]
-  context["__functions__"] = []
-  context["__curves__"] = []
-  context["__parameterset__"] = parameterset
-  context["leaf_surface_patch"] = leaf_surface_patch
-  context["petal_surface_patch"] = petal_surface_patch
-  context["ground_surface_patch"] = ground_surface_patch
-  context["Totoleaf"] = Totoleaf
+	import openalea.plantgl.all as pgl
+	Color_0 = pgl.Material("Color_0" , ambient = (19,19,19) , diffuse = 0 , )
+	Color_0.name = "Color_0"
+	context.turtle.setMaterial(0,Color_0)
+	Color_1 = pgl.Material("Color_1" , ambient = (255,0,0) , diffuse = 1 , )
+	Color_1.name = "Color_1"
+	context.turtle.setMaterial(1,Color_1)
+	Color_2 = pgl.Material("Color_2" , ambient = (0,35,35) , diffuse = 7.28571 , )
+	Color_2.name = "Color_2"
+	context.turtle.setMaterial(2,Color_2)
+	Color_3 = pgl.Material("Color_3" , ambient = (0,0,27) , diffuse = 9.44444 , )
+	Color_3.name = "Color_3"
+	context.turtle.setMaterial(3,Color_3)
+	Color_4 = pgl.Material("Color_4" , ambient = (51,0,51) , diffuse = 5 , )
+	Color_4.name = "Color_4"
+	context.turtle.setMaterial(4,Color_4)
+	Color_5 = pgl.Material("Color_5" , ambient = (18,0,0) , diffuse = 14.1111 , specular = (0,0,0) , )
+	Color_5.name = "Color_5"
+	context.turtle.setMaterial(5,Color_5)
+	Color_6 = pgl.Material("Color_6" , ambient = (45,45,0) , diffuse = 5.17778 , specular = (49,23,9) , )
+	Color_6.name = "Color_6"
+	context.turtle.setMaterial(6,Color_6)
+	Color_7 = pgl.Material("Color_7" , ambient = (0,29,29) , diffuse = 8.7931 , )
+	Color_7.name = "Color_7"
+	context.turtle.setMaterial(7,Color_7)
+	Color_8 = pgl.Material("Color_8" , ambient = (0,31,0) , diffuse = 2.67742 , )
+	Color_8.name = "Color_8"
+	context.turtle.setMaterial(8,Color_8)
+	Color_9 = pgl.Material("Color_9" , ambient = (41,41,0) , diffuse = 6.21951 , specular = (0,0,0) , )
+	Color_9.name = "Color_9"
+	context.turtle.setMaterial(9,Color_9)
+	Color_10 = pgl.Material("Color_10" , ambient = (41,0,0) , diffuse = 6.21951 , )
+	Color_10.name = "Color_10"
+	context.turtle.setMaterial(10,Color_10)
+	Color_11 = pgl.Material("Color_11" , ambient = (30,0,30) , diffuse = 8.5 , )
+	Color_11.name = "Color_11"
+	context.turtle.setMaterial(11,Color_11)
+	Color_12 = pgl.Material("Color_12" , ambient = (0,0,31) , diffuse = 8.22581 , )
+	Color_12.name = "Color_12"
+	context.turtle.setMaterial(12,Color_12)
+	Color_13 = pgl.Material("Color_13" , ambient = (45,45,45) , diffuse = 5.66667 , )
+	Color_13.name = "Color_13"
+	context.turtle.setMaterial(13,Color_13)
+	Color_14 = pgl.Material("Color_14" , ambient = (63,12,13) , diffuse = 1.57143 , specular = (51,44,0) , emission = (8,8,8) , shininess = 0.47 , )
+	Color_14.name = "Color_14"
+	context.turtle.setMaterial(14,Color_14)
+	Color_15 = pgl.Material("Color_15" , ambient = (0,59,6) , diffuse = 1.59322 , )
+	Color_15.name = "Color_15"
+	context.turtle.setMaterial(15,Color_15)
+	Color_16 = pgl.Material("Color_16" , ambient = (29,7,6) , diffuse = 4.41379 , specular = (37,95,28) , )
+	Color_16.name = "Color_16"
+	context.turtle.setMaterial(16,Color_16)
+	Color_17 = pgl.Material("Color_17" , ambient = (107,59,54) , diffuse = 1.91589 , transparency = 0.17 , )
+	Color_17.name = "Color_17"
+	context.turtle.setMaterial(17,Color_17)
+	Color_18 = pgl.Material("Color_18" , ambient = (82,64,45) , diffuse = 2.56098 , specular = (0,0,0) , shininess = 0 , )
+	Color_18.name = "Color_18"
+	context.turtle.setMaterial(18,Color_18)
+	Color_19 = pgl.Material("Color_19" , ambient = (49,29,25) , diffuse = 2.55102 , specular = (0,0,0) , shininess = 0 , )
+	Color_19.name = "Color_19"
+	context.turtle.setMaterial(19,Color_19)
+	Color_20 = pgl.Material("Color_20" , ambient = (0,85,0) , diffuse = 1.38824 , )
+	Color_20.name = "Color_20"
+	context.turtle.setMaterial(20,Color_20)
+	Color_24 = pgl.Material("Color_24" , ambient = (255,247,1) , diffuse = 0.627451 , )
+	Color_24.name = "Color_24"
+	context.turtle.setMaterial(24,Color_24)
+	Color_25 = pgl.Material("Color_25" , ambient = (48,255,2) , diffuse = 0.627451 , )
+	Color_25.name = "Color_25"
+	context.turtle.setMaterial(25,Color_25)
+	Color_26 = pgl.Material("Color_26" , ambient = (1,255,255) , diffuse = 0.627451 , )
+	Color_26.name = "Color_26"
+	context.turtle.setMaterial(26,Color_26)
+	Color_27 = pgl.Material("Color_27" , ambient = (0,46,255) , diffuse = 0.627451 , )
+	Color_27.name = "Color_27"
+	context.turtle.setMaterial(27,Color_27)
+	Color_28 = pgl.Material("Color_28" , ambient = (255,0,255) , diffuse = 0.627451 , )
+	Color_28.name = "Color_28"
+	context.turtle.setMaterial(28,Color_28)
+	Color_29 = pgl.Material("Color_29" , ambient = (255,21,0) , diffuse = 0.627451 , )
+	Color_29.name = "Color_29"
+	context.turtle.setMaterial(29,Color_29)
+	Color_34 = pgl.Material("Color_34" , ambient = (0,218,32) , diffuse = 0.733945 , )
+	Color_34.name = "Color_34"
+	context.turtle.setMaterial(34,Color_34)
+	Color_35 = pgl.Material("Color_35" , ambient = (0,1,21) , diffuse = 8.14286 , )
+	Color_35.name = "Color_35"
+	context.turtle.setMaterial(35,Color_35)
+	Color_36 = pgl.Material("Color_36" , ambient = (25,0,255) , diffuse = 0 , specular = (0,0,0) , )
+	Color_36.name = "Color_36"
+	context.turtle.setMaterial(36,Color_36)
+	Color_37 = pgl.Material("Color_37" , ambient = (28,0,250) , diffuse = 0 , specular = (0,0,0) , )
+	Color_37.name = "Color_37"
+	context.turtle.setMaterial(37,Color_37)
+	Color_38 = pgl.Material("Color_38" , ambient = (32,0,246) , diffuse = 0 , specular = (0,0,0) , )
+	Color_38.name = "Color_38"
+	context.turtle.setMaterial(38,Color_38)
+	Color_39 = pgl.Material("Color_39" , ambient = (36,0,242) , diffuse = 0 , specular = (0,0,0) , )
+	Color_39.name = "Color_39"
+	context.turtle.setMaterial(39,Color_39)
+	Color_40 = pgl.Material("Color_40" , ambient = (40,0,238) , diffuse = 0 , specular = (0,0,0) , )
+	Color_40.name = "Color_40"
+	context.turtle.setMaterial(40,Color_40)
+	Color_41 = pgl.Material("Color_41" , ambient = (44,0,234) , diffuse = 0 , specular = (0,0,0) , )
+	Color_41.name = "Color_41"
+	context.turtle.setMaterial(41,Color_41)
+	Color_42 = pgl.Material("Color_42" , ambient = (48,0,229) , diffuse = 0 , specular = (0,0,0) , )
+	Color_42.name = "Color_42"
+	context.turtle.setMaterial(42,Color_42)
+	Color_43 = pgl.Material("Color_43" , ambient = (51,0,225) , diffuse = 0 , specular = (0,0,0) , )
+	Color_43.name = "Color_43"
+	context.turtle.setMaterial(43,Color_43)
+	Color_44 = pgl.Material("Color_44" , ambient = (55,0,221) , diffuse = 0 , specular = (0,0,0) , )
+	Color_44.name = "Color_44"
+	context.turtle.setMaterial(44,Color_44)
+	Color_45 = pgl.Material("Color_45" , ambient = (101,0,171) , diffuse = 0 , specular = (0,0,0) , )
+	Color_45.name = "Color_45"
+	context.turtle.setMaterial(45,Color_45)
+	Color_46 = pgl.Material("Color_46" , ambient = (63,0,213) , diffuse = 0 , specular = (0,0,0) , )
+	Color_46.name = "Color_46"
+	context.turtle.setMaterial(46,Color_46)
+	Color_47 = pgl.Material("Color_47" , ambient = (67,0,208) , diffuse = 0 , specular = (0,0,0) , )
+	Color_47.name = "Color_47"
+	context.turtle.setMaterial(47,Color_47)
+	Color_48 = pgl.Material("Color_48" , ambient = (71,0,204) , diffuse = 0 , specular = (0,0,0) , )
+	Color_48.name = "Color_48"
+	context.turtle.setMaterial(48,Color_48)
+	Color_49 = pgl.Material("Color_49" , ambient = (74,0,200) , diffuse = 0 , specular = (0,0,0) , )
+	Color_49.name = "Color_49"
+	context.turtle.setMaterial(49,Color_49)
+	Color_50 = pgl.Material("Color_50" , ambient = (78,0,196) , diffuse = 0 , specular = (0,0,0) , )
+	Color_50.name = "Color_50"
+	context.turtle.setMaterial(50,Color_50)
+	Color_51 = pgl.Material("Color_51" , ambient = (82,0,192) , diffuse = 0 , specular = (0,0,0) , )
+	Color_51.name = "Color_51"
+	context.turtle.setMaterial(51,Color_51)
+	Color_52 = pgl.Material("Color_52" , ambient = (86,0,188) , diffuse = 0 , specular = (0,0,0) , )
+	Color_52.name = "Color_52"
+	context.turtle.setMaterial(52,Color_52)
+	Color_53 = pgl.Material("Color_53" , ambient = (90,0,183) , diffuse = 0 , specular = (0,0,0) , )
+	Color_53.name = "Color_53"
+	context.turtle.setMaterial(53,Color_53)
+	Color_54 = pgl.Material("Color_54" , ambient = (94,0,179) , diffuse = 0 , specular = (0,0,0) , )
+	Color_54.name = "Color_54"
+	context.turtle.setMaterial(54,Color_54)
+	Color_55 = pgl.Material("Color_55" , ambient = (97,0,175) , diffuse = 0 , specular = (0,0,0) , )
+	Color_55.name = "Color_55"
+	context.turtle.setMaterial(55,Color_55)
+	Color_56 = pgl.Material("Color_56" , ambient = (59,0,217) , diffuse = 0 , specular = (0,0,0) , )
+	Color_56.name = "Color_56"
+	context.turtle.setMaterial(56,Color_56)
+	Color_57 = pgl.Material("Color_57" , ambient = (105,0,167) , diffuse = 0 , specular = (0,0,0) , )
+	Color_57.name = "Color_57"
+	context.turtle.setMaterial(57,Color_57)
+	Color_58 = pgl.Material("Color_58" , ambient = (109,0,162) , diffuse = 0 , specular = (0,0,0) , )
+	Color_58.name = "Color_58"
+	context.turtle.setMaterial(58,Color_58)
+	Color_59 = pgl.Material("Color_59" , ambient = (113,0,158) , diffuse = 0 , specular = (0,0,0) , )
+	Color_59.name = "Color_59"
+	context.turtle.setMaterial(59,Color_59)
+	Color_60 = pgl.Material("Color_60" , ambient = (116,0,154) , diffuse = 0 , specular = (0,0,0) , )
+	Color_60.name = "Color_60"
+	context.turtle.setMaterial(60,Color_60)
+	Color_61 = pgl.Material("Color_61" , ambient = (120,0,150) , diffuse = 0 , specular = (0,0,0) , )
+	Color_61.name = "Color_61"
+	context.turtle.setMaterial(61,Color_61)
+	Color_62 = pgl.Material("Color_62" , ambient = (124,0,146) , diffuse = 0 , specular = (0,0,0) , )
+	Color_62.name = "Color_62"
+	context.turtle.setMaterial(62,Color_62)
+	Color_63 = pgl.Material("Color_63" , ambient = (128,0,142) , diffuse = 0 , specular = (0,0,0) , )
+	Color_63.name = "Color_63"
+	context.turtle.setMaterial(63,Color_63)
+	Color_64 = pgl.Material("Color_64" , ambient = (132,0,137) , diffuse = 0 , specular = (0,0,0) , )
+	Color_64.name = "Color_64"
+	context.turtle.setMaterial(64,Color_64)
+	Color_65 = pgl.Material("Color_65" , ambient = (136,0,133) , diffuse = 0 , specular = (0,0,0) , )
+	Color_65.name = "Color_65"
+	context.turtle.setMaterial(65,Color_65)
+	Color_66 = pgl.Material("Color_66" , ambient = (140,0,129) , diffuse = 0 , specular = (0,0,0) , )
+	Color_66.name = "Color_66"
+	context.turtle.setMaterial(66,Color_66)
+	Color_67 = pgl.Material("Color_67" , ambient = (143,0,125) , diffuse = 0 , specular = (0,0,0) , )
+	Color_67.name = "Color_67"
+	context.turtle.setMaterial(67,Color_67)
+	Color_68 = pgl.Material("Color_68" , ambient = (147,0,121) , diffuse = 0 , specular = (0,0,0) , )
+	Color_68.name = "Color_68"
+	context.turtle.setMaterial(68,Color_68)
+	Color_69 = pgl.Material("Color_69" , ambient = (151,0,116) , diffuse = 0 , specular = (0,0,0) , )
+	Color_69.name = "Color_69"
+	context.turtle.setMaterial(69,Color_69)
+	Color_70 = pgl.Material("Color_70" , ambient = (155,0,112) , diffuse = 0 , specular = (0,0,0) , )
+	Color_70.name = "Color_70"
+	context.turtle.setMaterial(70,Color_70)
+	Color_71 = pgl.Material("Color_71" , ambient = (159,0,108) , diffuse = 0 , specular = (0,0,0) , )
+	Color_71.name = "Color_71"
+	context.turtle.setMaterial(71,Color_71)
+	Color_72 = pgl.Material("Color_72" , ambient = (163,0,104) , diffuse = 0 , specular = (0,0,0) , )
+	Color_72.name = "Color_72"
+	context.turtle.setMaterial(72,Color_72)
+	Color_73 = pgl.Material("Color_73" , ambient = (166,0,100) , diffuse = 0 , specular = (0,0,0) , )
+	Color_73.name = "Color_73"
+	context.turtle.setMaterial(73,Color_73)
+	Color_74 = pgl.Material("Color_74" , ambient = (170,0,96) , diffuse = 0 , specular = (0,0,0) , )
+	Color_74.name = "Color_74"
+	context.turtle.setMaterial(74,Color_74)
+	Color_75 = pgl.Material("Color_75" , ambient = (174,0,91) , diffuse = 0 , specular = (0,0,0) , )
+	Color_75.name = "Color_75"
+	context.turtle.setMaterial(75,Color_75)
+	Color_76 = pgl.Material("Color_76" , ambient = (178,0,87) , diffuse = 0 , specular = (0,0,0) , )
+	Color_76.name = "Color_76"
+	context.turtle.setMaterial(76,Color_76)
+	Color_77 = pgl.Material("Color_77" , ambient = (182,0,83) , diffuse = 0 , specular = (0,0,0) , )
+	Color_77.name = "Color_77"
+	context.turtle.setMaterial(77,Color_77)
+	Color_78 = pgl.Material("Color_78" , ambient = (186,0,79) , diffuse = 0 , specular = (0,0,0) , )
+	Color_78.name = "Color_78"
+	context.turtle.setMaterial(78,Color_78)
+	Color_79 = pgl.Material("Color_79" , ambient = (189,0,75) , diffuse = 0 , specular = (0,0,0) , )
+	Color_79.name = "Color_79"
+	context.turtle.setMaterial(79,Color_79)
+	Color_80 = pgl.Material("Color_80" , ambient = (193,0,70) , diffuse = 0 , specular = (0,0,0) , )
+	Color_80.name = "Color_80"
+	context.turtle.setMaterial(80,Color_80)
+	Color_81 = pgl.Material("Color_81" , ambient = (197,0,66) , diffuse = 0 , specular = (0,0,0) , )
+	Color_81.name = "Color_81"
+	context.turtle.setMaterial(81,Color_81)
+	Color_82 = pgl.Material("Color_82" , ambient = (201,0,62) , diffuse = 0 , specular = (0,0,0) , )
+	Color_82.name = "Color_82"
+	context.turtle.setMaterial(82,Color_82)
+	Color_83 = pgl.Material("Color_83" , ambient = (205,0,58) , diffuse = 0 , specular = (0,0,0) , )
+	Color_83.name = "Color_83"
+	context.turtle.setMaterial(83,Color_83)
+	Color_84 = pgl.Material("Color_84" , ambient = (209,0,54) , diffuse = 0 , specular = (0,0,0) , )
+	Color_84.name = "Color_84"
+	context.turtle.setMaterial(84,Color_84)
+	Color_85 = pgl.Material("Color_85" , ambient = (212,0,50) , diffuse = 0 , specular = (0,0,0) , )
+	Color_85.name = "Color_85"
+	context.turtle.setMaterial(85,Color_85)
+	Color_86 = pgl.Material("Color_86" , ambient = (216,0,45) , diffuse = 0 , specular = (0,0,0) , )
+	Color_86.name = "Color_86"
+	context.turtle.setMaterial(86,Color_86)
+	Color_87 = pgl.Material("Color_87" , ambient = (220,0,41) , diffuse = 0 , specular = (0,0,0) , )
+	Color_87.name = "Color_87"
+	context.turtle.setMaterial(87,Color_87)
+	Color_88 = pgl.Material("Color_88" , ambient = (224,0,37) , diffuse = 0 , specular = (0,0,0) , )
+	Color_88.name = "Color_88"
+	context.turtle.setMaterial(88,Color_88)
+	Color_89 = pgl.Material("Color_89" , ambient = (228,0,33) , diffuse = 0 , specular = (0,0,0) , )
+	Color_89.name = "Color_89"
+	context.turtle.setMaterial(89,Color_89)
+	Color_90 = pgl.Material("Color_90" , ambient = (232,0,29) , diffuse = 0 , specular = (0,0,0) , )
+	Color_90.name = "Color_90"
+	context.turtle.setMaterial(90,Color_90)
+	Color_91 = pgl.Material("Color_91" , ambient = (235,0,24) , diffuse = 0 , specular = (0,0,0) , )
+	Color_91.name = "Color_91"
+	context.turtle.setMaterial(91,Color_91)
+	Color_92 = pgl.Material("Color_92" , ambient = (239,0,20) , diffuse = 0 , specular = (0,0,0) , )
+	Color_92.name = "Color_92"
+	context.turtle.setMaterial(92,Color_92)
+	Color_93 = pgl.Material("Color_93" , ambient = (243,0,16) , diffuse = 0 , specular = (0,0,0) , )
+	Color_93.name = "Color_93"
+	context.turtle.setMaterial(93,Color_93)
+	Color_94 = pgl.Material("Color_94" , ambient = (247,0,12) , diffuse = 0 , specular = (0,0,0) , )
+	Color_94.name = "Color_94"
+	context.turtle.setMaterial(94,Color_94)
+	Color_95 = pgl.Material("Color_95" , ambient = (251,0,8) , diffuse = 0 , specular = (0,0,0) , )
+	Color_95.name = "Color_95"
+	context.turtle.setMaterial(95,Color_95)
+	Color_96 = pgl.Material("Color_96" , ambient = (255,0,4) , diffuse = 0 , specular = (0,0,0) , )
+	Color_96.name = "Color_96"
+	context.turtle.setMaterial(96,Color_96)
+	Color_97 = pgl.Material("Color_97" , ambient = (255,0,0) , diffuse = 0.619608 , )
+	Color_97.name = "Color_97"
+	context.turtle.setMaterial(97,Color_97)
+	Color_98 = pgl.Material("Color_98" , ambient = (149,0,0) , diffuse = 1.0604 , )
+	Color_98.name = "Color_98"
+	context.turtle.setMaterial(98,Color_98)
+	Color_99 = pgl.Material("Color_99" , ambient = (156,0,0) , diffuse = 0 , specular = (0,0,0) , )
+	Color_99.name = "Color_99"
+	context.turtle.setMaterial(99,Color_99)
+	Color_100 = pgl.Material("Color_100" , ambient = (165,24,0) , diffuse = 0 , specular = (0,0,0) , )
+	Color_100.name = "Color_100"
+	context.turtle.setMaterial(100,Color_100)
+	Color_101 = pgl.Material("Color_101" , ambient = (175,49,0) , diffuse = 0 , specular = (0,0,0) , )
+	Color_101.name = "Color_101"
+	context.turtle.setMaterial(101,Color_101)
+	Color_102 = pgl.Material("Color_102" , ambient = (185,74,0) , diffuse = 0 , specular = (0,0,0) , )
+	Color_102.name = "Color_102"
+	context.turtle.setMaterial(102,Color_102)
+	Color_103 = pgl.Material("Color_103" , ambient = (195,98,0) , diffuse = 0 , specular = (0,0,0) , )
+	Color_103.name = "Color_103"
+	context.turtle.setMaterial(103,Color_103)
+	Color_104 = pgl.Material("Color_104" , ambient = (205,123,0) , diffuse = 0 , specular = (0,0,0) , )
+	Color_104.name = "Color_104"
+	context.turtle.setMaterial(104,Color_104)
+	Color_105 = pgl.Material("Color_105" , ambient = (215,148,0) , diffuse = 0 , specular = (0,0,0) , )
+	Color_105.name = "Color_105"
+	context.turtle.setMaterial(105,Color_105)
+	Color_106 = pgl.Material("Color_106" , ambient = (225,172,0) , diffuse = 0 , specular = (0,0,0) , )
+	Color_106.name = "Color_106"
+	context.turtle.setMaterial(106,Color_106)
+	Color_107 = pgl.Material("Color_107" , ambient = (235,197,0) , diffuse = 0 , specular = (0,0,0) , )
+	Color_107.name = "Color_107"
+	context.turtle.setMaterial(107,Color_107)
+	Color_108 = pgl.Material("Color_108" , ambient = (245,222,0) , diffuse = 0 , specular = (0,0,0) , )
+	Color_108.name = "Color_108"
+	context.turtle.setMaterial(108,Color_108)
+	Color_109 = pgl.Material("Color_109" , ambient = (255,247,0) , diffuse = 0 , specular = (0,0,0) , )
+	Color_109.name = "Color_109"
+	context.turtle.setMaterial(109,Color_109)
+	context.animation_timestep = 0.0
+	context.options.setSelection('Module declaration',1)
+	context.options.setSelection('Module matching',0)
+	context.options.setSelection('Early return when no matching',0)
+	context.options.setSelection('Warning with Turtle inconsistency',0)
+	context.options.setSelection('Selection Always Required',1)
+	import openalea.plantgl.all as pgl
+	leaf_surface_patch = pgl.BezierPatch(	
+	    pgl.Point4Matrix([[(0.00990099, -0.00990099, 0.990099, 1), (0.019802, 0, 0.980198, 1), (0.00990099, 0, 0.990099, 1), (0.00990099, 0, 0.990099, 1)], [(-0.128713, -0.425743, 0.752475, 1), (-0.336634, -0.158416, 0.267327, 1), (-0.336634, 0.207921, 0.267327, 1), (-0.118812, 0.425743, 0.752475, 1)], [(0, -0.742574, 0.188119, 1), (0, -0.247525, 0.188119, 1), (0, 0.247525, 0.188119, 1), (0, 0.742574, 0.188119, 1)], [(0, -0.00990099, -0.00990099, 1), (0, -0.00990099, -0.00990099, 1), (0, 0, -0.00990099, 1), (0, -0.00990099, -0.00990099, 1)]]) , 
+	    ustride = 10 , 
+vstride = 10 , 	    )
+	leaf_surface_patch.name = "leaf_surface_patch"
+	petal_surface_patch = pgl.BezierPatch(	
+	    pgl.Point4Matrix([[(-0.929873, -0.29792, 0.397227, 1), (-1.02015, 0, 0.550701, 1), (-1.02015, 0, 0.550701, 1), (-0.947929, 0.252781, 0.397227, 1)], [(-0.677092, -0.478478, 0.397227, 1), (-0.911817, -0.225697, -0.0451395, 1), (-0.902789, 0.225697, -0.0451395, 1), (-0.713203, 0.415283, 0.397227, 1)], [(-0.252781, -0.46945, 0.117363, 1), (-0.46945, -0.225697, 0.0993068, 1), (-0.46945, 0.225697, 0.0993068, 1), (-0.270837, 0.424311, 0.162502, 1)], [(0, 0, 0, 1), (0, 0, 0, 1), (0, 0, 0, 1), (0, 0, 0, 1)]]) , 
+	    ustride = 10 , 
+vstride = 10 , 	    )
+	petal_surface_patch.name = "petal_surface_patch"
+	ground_surface_patch = pgl.BezierPatch(	
+	    pgl.Point4Matrix([[(-0.52192, -0.453843, -0.204229, 1), (-0.57865, -0.340382, -0.192883, 1), (-0.589996, 0.374421, -0.204229, 1), (-0.510574, 0.465189, -0.204229, 1)], [(-0.374421, -0.510574, -0.204229, 1), (-0.283652, -0.294998, 0.192883, 1), (-0.283652, 0.283652, 0.192883, 1), (-0.385767, 0.533266, -0.204229, 1)], [(0.272306, -0.510574, -0.192883, 1), (0.283652, -0.294998, 0.192883, 1), (0.283652, 0.272306, 0.192883, 1), (0.272306, 0.510574, -0.192883, 1)], [(0.374421, -0.419805, -0.192883, 1), (0.431151, -0.283652, -0.204229, 1), (0.419805, 0.283652, -0.192883, 1), (0.351728, 0.453843, -0.204229, 1)]]) , 
+	    ustride = 10 , 
+vstride = 10 , 	    )
+	ground_surface_patch.name = "ground_surface_patch"
+	Totoleaf = pgl.BezierPatch(	
+	    pgl.Point4Matrix([[(0.00990099, -0.00990099, 0.990099, 1), (0.019802, 0, 0.980198, 1), (0.00990099, 0, 0.990099, 1), (0.00990099, 0, 0.990099, 1)], [(-0.11232, -0.231828, 0.676126, 1), (-0.336634, -0.158416, 0.267327, 1), (-0.336634, 0.207921, 0.267327, 1), (-0.126782, 0.25623, 0.724719, 1)], [(0.00193113, -0.364476, 0.185141, 1), (0, -0.247525, 0.188119, 1), (0, 0.247525, 0.188119, 1), (-0.000284781, 0.409708, 0.196407, 1)], [(-0.000920106, -0.000726733, -0.0134764, 1), (0, -0.00990099, -0.00990099, 1), (0, 0, -0.00990099, 1), (0, -0.00990099, -0.00990099, 1)]]) , 
+	    ustride = 10 , 
+vstride = 10 , 	    )
+	Totoleaf.name = "Totoleaf"
+	panel_0 = ({'active': True, 'visible': True, 'name': 'Panel 2'},[('NurbsPatch',leaf_surface_patch),('NurbsPatch',petal_surface_patch),('NurbsPatch',ground_surface_patch),('NurbsPatch',Totoleaf)])
+	parameterset = [panel_0,]
+	context["__functions__"] = []
+	context["__curves__"] = []
+	context["__parameterset__"] = parameterset
+	context["leaf_surface_patch"] = leaf_surface_patch
+	context["petal_surface_patch"] = petal_surface_patch
+	context["ground_surface_patch"] = ground_surface_patch
+	context["Totoleaf"] = Totoleaf

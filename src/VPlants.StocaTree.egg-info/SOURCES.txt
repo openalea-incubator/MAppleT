@@ -172,6 +172,17 @@ doc/user/stocatree_nov_1997.png
 doc/user/stocatree_sept_1996.jpg
 doc/user/trunk_radius_versus_time.png
 doc/user/trunk_radius_versus_time_ori.png
+share/Scripts/F_0.mtg
+share/Scripts/delete.sh
+share/Scripts/exemple.py
+share/Scripts/figures.R
+share/Scripts/insert.sh
+share/Scripts/leaves_rm_pour_muslim.py
+share/Scripts/longueur.py
+share/Scripts/mtg_test.py
+share/Scripts/mtg_to_qualitree.py
+share/Scripts/sphc.py
+share/Scripts/vol_area_ratio.py
 share/data/FSPMsequences.seq
 share/data/Fuji.ini
 share/data/Fujisequences.seq
