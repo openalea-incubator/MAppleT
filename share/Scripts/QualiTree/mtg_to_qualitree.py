@@ -1,9 +1,20 @@
-#!/usr/bin/eval PYTHON_VERSION=2.6
+#!/usr/bin/python
 #-*- encoding: Latin-1 -*-
 
+#-------------------------------------------------------------------------------
+# Name:         exploreScene
+# Purpose:      A script to extract information from a PlantGL scene.
+# Author:       Da Silva
+# Created:      03/26/2014
+# Copyright:    (c) Da Silva 2014
+# Licence:      CeCill/LGPL
+#-------------------------------------------------------------------------------
 #from extraction_rameaux import *
 from openalea.mtg.aml import *
 from math import pi
+
+import random
+import openalea.plantgl.all as pgl
 
 #===========================================================#
 # Utils functions to explore and extract data from MTG      #
@@ -272,57 +283,65 @@ def vol_rameaux(x):
   return sum([vol_rameau_cat(x, cat) for cat in ['small', 'medium', 'large']])
 
 #===========================================================#
-
-def tree_sql(nom_arbre, date, variete, vr_masse_seche, jr_masse_seche, vb_masse_seche, architecture,rameauxmixte):
-    """
-        Génère le code sql permettant de supprimer un arbre dans la base de donnée de qualitree
-        Renvoie la requête SQL en string
-        nom_arbre (str) : nom de l'arbre dans la base de données qualitree
-        date (str) : date à laquelle l'arbre à été mesuré sous la forme YYYY-MM-DD
-        variete (str) : variété
-        vr_masse_seche (float) : masse sèche des vielles racines (grammes)
-        jr_masse_seche (float) : masse sèche des jeunes racines (grammes)
-        vb_masse_seche (float) : masse sèche du vieux bois (grammes)
-        architecture (list of list) : liste de listes représentant les rameaux mixtes et le vieux bois sous la forme : niveau (int), nom_rameau (str), diametre_base, diametre_ext, metamere, x1, y1, z1, x2, y2, Z2
-        rameauxmixte (list of list) : liste de listes représentant les rameaux mixtes sous la forme : nom_rameau, tl_masse_seche, f2_nombre_unites, f2_masse_seche, pfx_nombre_unites, pfx_masse_seche
-     """
-
-    #Si il y a un arbre du même nom et année, on le supprime.
-    sql = "DELETE FROM arbre WHERE nom_arbre='"+nom_arbre+"';\n"
-    sql+= "DELETE FROM architecture WHERE nom_arbre='"+nom_arbre+"';\n"
-    sql+= "DELETE FROM rameauxmixte WHERE nom_arbre='"+nom_arbre+"';\n"
-
-    #table "arbre"
-    header = ['nom_arbre', 'date', 'variete', 'vr_masse_seche', 'jr_masse_seche', 'vb_masse_seche']
-    sql+= insert_into("arbre",header,[{'nom_arbre':nom_arbre, 'date':date, 'variete':variete, 'vr_masse_seche':vr_masse_seche, 'jr_masse_seche':jr_masse_seche, 'vb_masse_seche':vb_masse_seche}])
-
-    #table "architecture" (géométrie rammeaux mixte + vieux bois)
-    header = ['nom_arbre','niveau', 'nom_rameau', 'annee', 'diametre_base', 'diametre_ext', 'metamere', 'x1', 'y1', 'z1', 'x2', 'y2', 'z2', 'longueur']
-    ins_architecture = [{'nom_arbre':nom_arbre,'niveau':rameau[0], 'nom_rameau':rameau[1], 'annee':int(date.split("-")[0]), 'diametre_base': rameau[2], 'diametre_ext' : rameau[3], 'metamere' : rameau[4], 'x1' :rameau[5], 'y1':rameau[6], 'z1':rameau[7], 'x2':rameau[8], 'y2':rameau[9], 'z2':rameau[10], 'longueur':rameau[11]} for rameau in architecture]
-    sql+= insert_into("architecture",header,ins_architecture)
-    
-    #table "rameauxmixte" (matière sèche, concentration en sucres, nombre de pousses feuillées et de fruits...).
-    header = ['nom_arbre', 'nom_rameau', 'date', 'tl_masse_seche', 'f2_tms_pulpe','f2_concent_sorbitol', 'f2_concent_sucrose', 'f2_concent_glucose', 'f2_concent_fructose', 'f2_nombre_unites', 'f2_masse_seche', 'pf1_nombre_unites', 'pf1_masse_seche', 'pf2_nombre_unites', 'pf2_masse_seche', 'pf3_nombre_unites', 'pf3_masse_seche']
-    valeurs_sucres = (0.0018, 0.0104, 0.0185, 0.0182)#Valeurs "bidon" de teneur en sucre des fruits (nécessaire pour le modèle mais n'existe pas chez le pommier). Les valeurs prises sont celles de la variété alexandra.
-    ins_ram = [{'nom_arbre': nom_arbre , 'nom_rameau': rameau[0]  , 'date': date , 'tl_masse_seche': rameau[1], 'f2_concent_sorbitol': valeurs_sucres[0] , 'f2_concent_sucrose': valeurs_sucres[1] , 'f2_concent_glucose': valeurs_sucres[2] , 'f2_concent_fructose': valeurs_sucres[3] , 'f2_nombre_unites': rameau[2] , 'f2_masse_seche': rameau[3] , 'pf1_nombre_unites': rameau[4] , 'pf1_masse_seche': rameau[5], 'pf2_nombre_unites': rameau[6] , 'pf2_masse_seche': rameau[7], 'pf3_nombre_unites': rameau[8] , 'pf3_masse_seche': rameau[9], 'f2_tms_pulpe': rameau[11]}for rameau in rameauxmixte]
-    sql += insert_into("rameauxmixte",header,ins_ram)
-    return sql
-
-
+# Utils functions to explore and extract data from 3D scene #
 #===========================================================#
 
+def getLeavesOnly(scene, leafcolor="Color_15"):
+  return pgl.Scene([ sh for sh in scene if sh.appearance.getName() == leafcolor])
 
-def tree_csv(nom_arbre, date, variete, vr_masse_seche, jr_masse_seche, vb_masse_seche, architecture,rameauxmixte):
-    #table "architecture" (géométrie rammeaux mixte + vieux bois)
-    header = ['index','nom_arbre','niveau', 'nom_rameau', 'annee', 'diametre_base', 'diametre_ext', 'metamere', 'x1', 'y1', 'z1', 'x2', 'y2', 'z2', 'longueur']
-    ins_architecture = [{'index': rameau[12],'nom_arbre':nom_arbre,'niveau':rameau[0], 'nom_rameau':rameau[1], 'annee':int(date.split("-")[0]), 'diametre_base': rameau[2], 'diametre_ext' : rameau[3], 'metamere' : rameau[4], 'x1' :rameau[5], 'y1':rameau[6], 'z1':rameau[7], 'x2':rameau[8], 'y2':rameau[9], 'z2':rameau[10], 'longueur':rameau[11]} for rameau in architecture]
-    save_csv(header,ins_architecture,nom_arbre + "_architecture.csv")
+def computeBoundingShape(scene, shape='ellipsoid'):
+  """
+  Compute a bounding volume for the given `scene`.
+  The `shape` of this volume can be one of these keyword 
+  Note that the `pgl.fit` could deliver different shapes by using
+  one of the following keyword instead of 'ellipsoid':
+  EXTRUDEDHULL ; ASYMMETRICHULL ; EXTRUSION ; SPHERE ; ASPHERE ; BSPHERE
+  CYLINDER ; ACYLINDER ; BCYLINDER ; ELLIPSOID ; BELLIPSOID2 ; AELLIPSOID
+  BELLIPSOID ; AALIGNEDBOX ; BALIGNEDBOX ; BOX ; ABOX ; BBOX ; CONVEXHULL
+  """
+  
+  gr= pgl.Group([ sh.geometry for sh in scene ])
+  tglset = pgl.fit( shape, gr )
+  #hull = pgl.Shape( tglSet, __Green )
+  return tglset
+
+def ellipseDesc(lps):
+  """
+  Function to extract the center, radii and rotations of a given ellipse
+  A bounding ellipse is generated as a Translated(Rotated(Scaled(Sphere)))
+  Hence the ellipse center is given by the translation and its radii by the scaling
+  """
+  unit = 100
+
+  if isinstance(lps, pgl.Translated):
+    cx, cy, cz = lps.translation
+  else:
+    print"missing Translated from the bounding ellipse as a Translated(Rotated(Scaled(Sphere)))"
+
+  ori = lps.geometry
+
+  if isinstance(ori, pgl.Oriented):
+    rotMat = ori.transformation().getMatrix3()
+    az, el, roll = rotMat.eulerAnglesZYX()
+  else:
+    print"missing Oriented from the bounding ellipse as a Translated(Rotated(Scaled(Sphere)))"
+    az = 0
+  
+  scal = ori.geometry
+
+  if isinstance(scal, pgl.Scaled):
+    scMat = scal.transformation().getMatrix()
+    rx, ry, rz, rt = scMat.getDiagonal()
+  else:
+    print"missing Scaled from the bounding ellipse as a Translated(Rotated(Scaled(Sphere)))"
+    rx=ry=rz=1
+
+  #x1, y1, z1 #Conversion repère MappleT (m) à reprère Qualitree (q) : Xq=Xm Yq=Zm Zq=-Ym, conversion m -> cm (?). 
+  #Due to change of coordinate axis, rotation needs - pi
     
-    #table "rameauxmixte" (matière sèche, concentration en sucres, nombre de pousses feuillées et de fruits...).
-    header = ['index','nom_arbre', 'nom_rameau', 'date', 'tl_masse_seche', 'f2_tms_pulpe', 'f2_concent_sorbitol', 'f2_concent_sucrose', 'f2_concent_glucose', 'f2_concent_fructose', 'f2_nombre_unites', 'f2_masse_seche', 'pf1_nombre_unites', 'pf1_masse_seche', 'pf2_nombre_unites', 'pf2_masse_seche', 'pf3_nombre_unites', 'pf3_masse_seche']
-    valeurs_sucres = (0.0018, 0.0104, 0.0185, 0.0182)#Valeurs "bidon" de teneur en sucre des fruits (nécessaire pour le modèle mais n'existe pas chez le pommier). Les valeurs prises sont celles de la variété alexandra.
-    ins_ram = [{'index': rameau[10],'nom_arbre': nom_arbre , 'nom_rameau': rameau[0]  , 'date': date , 'tl_masse_seche': rameau[1], 'f2_concent_sorbitol': valeurs_sucres[0] , 'f2_concent_sucrose': valeurs_sucres[1] , 'f2_concent_glucose': valeurs_sucres[2] , 'f2_concent_fructose': valeurs_sucres[3] , 'f2_nombre_unites': rameau[2] , 'f2_masse_seche': rameau[3], 'pf1_nombre_unites': rameau[4] , 'pf1_masse_seche': rameau[5], 'pf2_nombre_unites': rameau[6] , 'pf2_masse_seche': rameau[7], 'pf3_nombre_unites': rameau[8] , 'pf3_masse_seche': rameau[9], 'f2_tms_pulpe': rameau[11]} for rameau in rameauxmixte]
-    save_csv(header,ins_ram,nom_arbre + "_rameauxmixtes.csv")
+  return cx*unit, cz*unit, -cy*unit, rx*unit, rz*unit, ry*unit, az-3.1415927
+
+#===========================================================#
 
 def quote_str(v):
     if type(v) == type(""):
@@ -345,9 +364,144 @@ def save_csv(header,dict_list,filename):
     f.write(";".join(header)+"\n"+"\n".join(values))
     f.close()
 
-import random
+def qualitree_nom_rameaux(rmx):
+    """ Défini le nom des rameaux qualitree
+    rmx (list of vtx) : liste des rameaux mixtes et du vieux bois.
+    Renvoie un dictionaire avec comme clef l'id du vtx et comme valeur le nom Qualitree"""
+    
+    chiffres = '123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ'
+    fathers = [Father(x) for x in rmx]
+    qnames = {rmx[fathers.index(None)]:'r0'}#le tronc n'a pas de pêre.
+    rmx2 = [rmx[fathers.index(None)]] #rameaux dont on a déterminé le nom qualitree mais pas celui de ses enfants
+    while len(rmx2) > 0:
+        vtx = rmx2[0]#le rameau sur lequel on travaille
+        childrens = [rmx[i] for i,x in enumerate(fathers) if x == vtx]#On récupère tous les enfants présents dans rmx (les autres enfants comme les pousses feuillées sont exclus)
+        
+        rmx2 = rmx2[1:]#On retire le rameau de la liste des rameaux dont il faut déterminer le nom des enfants
+        rmx2 += childrens #On rajoutte les enfants dans la liste
+        
+        if len(childrens)>0:#Si le rameau a des enfants on les nomme
+            vtx_metamers = Components(vtx)
+            childrens_metamer_position = [vtx_metamers.index(Father(Components(x)[0])) for x in childrens]#position du pêre des enfants dans vtx (à l'échelle du métamère)
+            sorted_metamer_position = sorted(childrens_metamer_position)
+            childrens_position = [sorted_metamer_position.index(x)+1 for x in childrens_metamer_position] #position des enfants entre eux (1 pour le premier, 2 pour le deuxième...).
+            
+            c_p=[]
+            for i in childrens_position:#Si il y a des doublons dans childrens_position on incrémente l'un d'entre eux (quand eux rameaux partent du même métamère)
+                if i not in c_p:
+                    c_p.append(i)
+                else:
+                    c_p.append(i+1)
+            childrens_position=c_p
 
-def extract_architecture(mtg_file_path,nom_arbre,date,variete,SLA,densite_MS_rameaux,TMS_fruits,SR,charge_fruits=None,seed=None):
+            if qnames[vtx]=='r0':#les fils du tronc sont nommées r1, r2, r3...
+                for k in range(len(childrens)):
+                    assert childrens_position[k] <= len(chiffres), 'Le rameau r0 a {rams} ramifications, ce qui est supérieur au nombre maximal de {max}'.format(rams=childrens_position[k],max=len(chiffres))
+                    qnames[childrens[k]]='r'+str(chiffres[childrens_position[k]-1])
+            else:#sinon ils ont le nom du père suivi de -0, -1, -2...
+                for k in range(len(childrens)):
+                    qnames[childrens[k]]=qnames[vtx]+'-'+str(chiffres[childrens_position[k]-1])
+
+    return qnames
+
+
+def niveau(name):
+    return 0 if name == 'r0' else name.count('-')+1
+
+
+def qualitree_metamer(rmx, names):
+  """
+  Il faut renseigner la "longeur du métamère" pour chaque rameau dans la base de données.
+  Cette valeur est la longeur en mm entre la ramification précédente et celle portant le rameau,
+  sur le rameau parent.
+  """
+  metameres_qualitree = {}
+  chiffres = '123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ'
+  for x in rmx:
+    if(Father(x)==None):#La "longueur du métamère" n'a pas de sens pour le tronc.
+      metameres_qualitree[x] = 0#Qualitree demande que l'on indique 0.
+    else:
+      intervale = None
+      father_mets = Components(Father(x)) #métamères du du père de x
+      ramif_index = father_mets.index(Father(Components(x)[0])) #position du métamère (au sens de MAppleT) portant le rameau x sur le père de x.
+      if names[x][-1]=="1":#Pour la première ramification d'un rameau, le métamère est sa distance avec le début du parent.
+        intervale = father_mets[:ramif_index+1] #Liste des métamères dont la longueur doit etre comptée.
+      else:#Pour les ramifications suivantes, on prends la longeur entre cette ramification et la précédente.
+        nom_ramif_prec = names[x][:-1] + chiffres[chiffres.index(names[x][-1])-1]
+        ramif_prec = [c for c,v in names.items() if v == nom_ramif_prec][0]
+        index_ramif_prec = father_mets.index(Father(Components(ramif_prec)[0]))
+        intervale = father_mets[index_ramif_prec+1:ramif_index+1]
+
+      met = round(sum([length(m) for m in intervale])*1000,1)
+      metameres_qualitree[x] = met if met != 0 else 1
+
+  return metameres_qualitree
+
+#===========================================================#
+
+def tree_sql(nom_arbre, date, arbre, architecture,rameauxmixte, ellipseIN=False):
+    """
+        Génère le code sql permettant de supprimer un arbre dans la base de donnée de qualitree
+        Renvoie la requête SQL en string
+        nom_arbre (str) : nom de l'arbre dans la base de données qualitree
+        date (str) : date à laquelle l'arbre à été mesuré sous la forme YYYY-MM-DD
+        variete (str) : variété
+        vr_masse_seche (float) : masse sèche des vielles racines (grammes)
+        jr_masse_seche (float) : masse sèche des jeunes racines (grammes)
+        vb_masse_seche (float) : masse sèche du vieux bois (grammes)
+        architecture (list of list) : liste de listes représentant les rameaux mixtes et le vieux bois sous la forme : niveau (int), nom_rameau (str), diametre_base, diametre_ext, metamere, x1, y1, z1, x2, y2, Z2
+        rameauxmixte (list of list) : liste de listes représentant les rameaux mixtes sous la forme : nom_rameau, tl_masse_seche, f2_nombre_unites, f2_masse_seche, pfx_nombre_unites, pfx_masse_seche
+        ellipseIN
+     """
+
+    #Si il y a un arbre du même nom et année, on le supprime.
+    sql = "DELETE FROM arbre WHERE nom_arbre='"+nom_arbre+"';\n"
+    sql+= "DELETE FROM architecture WHERE nom_arbre='"+nom_arbre+"';\n"
+    sql+= "DELETE FROM rameauxmixte WHERE nom_arbre='"+nom_arbre+"';\n"
+
+    #table "arbre"
+    if ellipseIN:
+      header = ['nom_arbre', 'date', 'variete', 'vr_masse_seche', 'jr_masse_seche', 'vb_masse_seche', 'ci_x', 'ci_y', 'ci_z', 'ri_x', 'ri_y', 'ri_z', 'coupe_h', 'coupe_b', 'angle_y']
+      ins_arbre = [{'nom_arbre':nom_arbre, 'date':date, 'variete':arbre[0], 'vr_masse_seche':arbre[1], 'jr_masse_seche':arbre[2], 'vb_masse_seche':arbre[3], 'ci_x':arbre[4], 'ci_y':arbre[5], 'ci_z':arbre[6], 'ri_x':arbre[7], 'ri_y':arbre[8], 'ri_z':arbre[9], 'coupe_h':arbre[10], 'coupe_b':arbre[11], 'angle_y':arbre[12]}]
+    else:
+      header = ['nom_arbre', 'date', 'variete', 'vr_masse_seche', 'jr_masse_seche', 'vb_masse_seche']
+      ins_arbre = [{'nom_arbre':nom_arbre, 'date':date, 'variete':arbre[0], 'vr_masse_seche':arbre[1], 'jr_masse_seche':arbre[2], 'vb_masse_seche':arbre[3]}]
+
+
+    sql += insert_into('arbre', header, ins_arbre)
+    #sql+= insert_into("arbre",header,[{'nom_arbre':nom_arbre, 'date':date, 'variete':variete, 'vr_masse_seche':vr_masse_seche, 'jr_masse_seche':jr_masse_seche, 'vb_masse_seche':vb_masse_seche}])
+
+    #table "architecture" (géométrie rammeaux mixte + vieux bois)
+    header = ['nom_arbre','niveau', 'nom_rameau', 'annee', 'diametre_base', 'diametre_ext', 'metamere', 'x1', 'y1', 'z1', 'x2', 'y2', 'z2', 'longueur']
+    ins_architecture = [{'nom_arbre':nom_arbre,'niveau':rameau[0], 'nom_rameau':rameau[1], 'annee':int(date.split("-")[0]), 'diametre_base': rameau[2], 'diametre_ext' : rameau[3], 'metamere' : rameau[4], 'x1' :rameau[5], 'y1':rameau[6], 'z1':rameau[7], 'x2':rameau[8], 'y2':rameau[9], 'z2':rameau[10], 'longueur':rameau[11]} for rameau in architecture]
+    sql+= insert_into("architecture",header,ins_architecture)
+    
+    #table "rameauxmixte" (matière sèche, concentration en sucres, nombre de pousses feuillées et de fruits...).
+    header = ['nom_arbre', 'nom_rameau', 'date', 'tl_masse_seche', 'f2_tms_pulpe','f2_concent_sorbitol', 'f2_concent_sucrose', 'f2_concent_glucose', 'f2_concent_fructose', 'f2_nombre_unites', 'f2_masse_seche', 'pf1_nombre_unites', 'pf1_masse_seche', 'pf2_nombre_unites', 'pf2_masse_seche', 'pf3_nombre_unites', 'pf3_masse_seche']
+    valeurs_sucres = (0.0018, 0.0104, 0.0185, 0.0182)#Valeurs "bidon" de teneur en sucre des fruits (nécessaire pour le modèle mais n'existe pas chez le pommier). Les valeurs prises sont celles de la variété alexandra.
+    ins_ram = [{'nom_arbre': nom_arbre , 'nom_rameau': rameau[0]  , 'date': date , 'tl_masse_seche': rameau[1], 'f2_concent_sorbitol': valeurs_sucres[0] , 'f2_concent_sucrose': valeurs_sucres[1] , 'f2_concent_glucose': valeurs_sucres[2] , 'f2_concent_fructose': valeurs_sucres[3] , 'f2_nombre_unites': rameau[2] , 'f2_masse_seche': rameau[3] , 'pf1_nombre_unites': rameau[4] , 'pf1_masse_seche': rameau[5], 'pf2_nombre_unites': rameau[6] , 'pf2_masse_seche': rameau[7], 'pf3_nombre_unites': rameau[8] , 'pf3_masse_seche': rameau[9], 'f2_tms_pulpe': rameau[11]}for rameau in rameauxmixte]
+    sql += insert_into("rameauxmixte",header,ins_ram)
+    f = open(str(nom_arbre)+'_'+str(date)+'.sql', 'w')
+    f.write(sql)
+    f.close()
+
+    #return sql
+
+
+def tree_csv(nom_arbre, date, variete, vr_masse_seche, jr_masse_seche, vb_masse_seche, architecture,rameauxmixte):
+    #table "architecture" (géométrie rammeaux mixte + vieux bois)
+    header = ['index','nom_arbre','niveau', 'nom_rameau', 'annee', 'diametre_base', 'diametre_ext', 'metamere', 'x1', 'y1', 'z1', 'x2', 'y2', 'z2', 'longueur']
+    ins_architecture = [{'index': rameau[12],'nom_arbre':nom_arbre,'niveau':rameau[0], 'nom_rameau':rameau[1], 'annee':int(date.split("-")[0]), 'diametre_base': rameau[2], 'diametre_ext' : rameau[3], 'metamere' : rameau[4], 'x1' :rameau[5], 'y1':rameau[6], 'z1':rameau[7], 'x2':rameau[8], 'y2':rameau[9], 'z2':rameau[10], 'longueur':rameau[11]} for rameau in architecture]
+    save_csv(header, ins_architecture, str(nom_arbre) + '_' + str(date) + "_architecture.csv")
+    
+    #table "rameauxmixte" (matière sèche, concentration en sucres, nombre de pousses feuillées et de fruits...).
+    header = ['index','nom_arbre', 'nom_rameau', 'date', 'tl_masse_seche', 'f2_tms_pulpe', 'f2_concent_sorbitol', 'f2_concent_sucrose', 'f2_concent_glucose', 'f2_concent_fructose', 'f2_nombre_unites', 'f2_masse_seche', 'pf1_nombre_unites', 'pf1_masse_seche', 'pf2_nombre_unites', 'pf2_masse_seche', 'pf3_nombre_unites', 'pf3_masse_seche']
+    valeurs_sucres = (0.0018, 0.0104, 0.0185, 0.0182)#Valeurs "bidon" de teneur en sucre des fruits (nécessaire pour le modèle mais n'existe pas chez le pommier). Les valeurs prises sont celles de la variété alexandra.
+    ins_ram = [{'index': rameau[10],'nom_arbre': nom_arbre , 'nom_rameau': rameau[0]  , 'date': date , 'tl_masse_seche': rameau[1], 'f2_concent_sorbitol': valeurs_sucres[0] , 'f2_concent_sucrose': valeurs_sucres[1] , 'f2_concent_glucose': valeurs_sucres[2] , 'f2_concent_fructose': valeurs_sucres[3] , 'f2_nombre_unites': rameau[2] , 'f2_masse_seche': rameau[3], 'pf1_nombre_unites': rameau[4] , 'pf1_masse_seche': rameau[5], 'pf2_nombre_unites': rameau[6] , 'pf2_masse_seche': rameau[7], 'pf3_nombre_unites': rameau[8] , 'pf3_masse_seche': rameau[9], 'f2_tms_pulpe': rameau[11]} for rameau in rameauxmixte]
+    save_csv(header, ins_ram, str(nom_arbre) + '_' + str(date) + "_rameauxmixtes.csv")
+
+#===========================================================#
+def extract_architecture(mtg_file_path, scene_file_path, nom_arbre,date,variete,SLA,densite_MS_rameaux,TMS_fruits,SR,userEllipse=True, charge_fruits=None,seed=None):
     '''
     Converti un fichier .mtg généré par MAppleT en une architecure au format Qualitree. Le script .sql est renvoyé en sorti de cette fonction (il faudra l'enregistrer dans un fichier),
     des fichiers .csv correspondants aux tables de la bdd Qualitree sont aussi générés (cela permet de visualiser le résultat plus facilement qu'en SQL).
@@ -364,20 +518,23 @@ def extract_architecture(mtg_file_path,nom_arbre,date,variete,SLA,densite_MS_ram
     La masse des fruits quand la charge est fixée est égale à la moyenne de la masses des fruits dans le .mtg
     seed : graine du générateur de nombre pseudo aléatoire utilisé pour déterminer quelles inflorescences portent un fruit, par défaut la graine est aléatoire.
     '''
+
+    #Open the MTG file, only the first plant/tree will be considered in case of multiple plants in the same file
     m = MTG(mtg_file_path)
     plants = VtxList(Scale=1)
     
+    #Get the ordered list of GU year of appearance, fruiting unit are the before last-year ones
     annees = sorted(list(set([an(x) for x in uc(plants[0])])))
 
-    ram_mixtes = list(set(rameaux(plants[0])))#rameaux mixtes
+    ram_mixtes = rameaux(plants[0]) #rameaux mixtes
 
     #Les rameaux mixtes doivent être des UC de l'année précédente, sinon la condition de qualitree comme quoi un rameau mixte ne peut pas porter de ramifications n'est pas respectée, hors des bugs de MAppleT peuvent entrainer que certaines feuilles ne tombent pas ou que plusieurs UC soient produites dans la même année, les rameaux non conformes sont supprimés. 
-    ram_mixtes_error = [x for x in ram_mixtes if an(x) != annees[-2]]
-    for r in ram_mixtes_error:
+    for r in [x for x in ram_mixtes if an(x) != annees[-2]]:
         print 'ERREUR : rameaux mixte ' + Class(r) + str(Index(r)) +  ' avec pour année de croissance ' + str(an(r)) + '. Ce rameau ne sera pas considéré comme mixte'
         
     ram_mixtes = [x for x in ram_mixtes if an(x) == annees[-2]]
 
+    #Getting all the branches, i.e fruiting units + old wood
     rm = ram_mixtes
     while True:
         rm_new = list(set([Father(x) for x in rm] + rm))#On ajoutte le vieux bois
@@ -387,43 +544,26 @@ def extract_architecture(mtg_file_path,nom_arbre,date,variete,SLA,densite_MS_ram
             rm = rm_new
     rm = [x for x in rm if  x != None]
 
+    #Generate the GU names according to QualiTree naming convention
     names = qualitree_nom_rameaux(rm)
 
-    '''Il faut renseigner la "longeur du métamère" pour chaque rameau dans la base de données.
-    Cette valeur est la longeur en mm entre la ramification précédente et celle portant le rameau,
-    sur le rameau parent.'''
-    metameres_qualitree = {}
-    chiffres = '123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ'
-    for x in rm:
-        if(Father(x)==None):#La "longueur du métamère" n'a pas de sens pour le tronc.
-            metameres_qualitree[x] = 0#Qualitree demande que l'on indique 0.
-        else:
-            intervale = None
-            father_mets = Components(Father(x)) #métamères du du père de x
-            ramif_index = father_mets.index(Father(Components(x)[0])) #position du métamère (au sens de MAppleT) portant le rameau x sur le père de x.
-            if names[x][-1]=="1":#Pour la première ramification d'un rameau, le métamère est sa distance avec le début du parent.
-                intervale = father_mets[:ramif_index+1] #Liste des métamères dont la longueur doit etre comptée.
-            else:#Pour les ramifications suivantes, on prends la longeur entre cette ramification et la précédente.
-                nom_ramif_prec = names[x][:-1] + chiffres[chiffres.index(names[x][-1])-1]
-                ramif_prec = [c for c,v in names.items() if v == nom_ramif_prec][0]
-                index_ramif_prec = father_mets.index(Father(Components(ramif_prec)[0]))
-                intervale = father_mets[index_ramif_prec+1:ramif_index+1]
-            met = round(sum([length(m) for m in intervale])*1000,1)
-            metameres_qualitree[x] = met if met != 0 else 1
+    #Getting the QualiTree metamer info, i.e. length between the current GU and the previous one on the bearing shoot
+    metameres_qualitree = qualitree_metamer(rm, names)
+
+    #=====================================#
+    # Generate info for architecture table#
+    #=====================================#
 
 
-
-    tab_architecture = []
-
+    #QualiTree does not allow shoot positions to be below ground whereas it may results from MAppleT bending
     base_sous_sol = [x for x in rm if zz(Components(x)[0]) <= 0]
     sommet_sous_sol = [x for x in rm if zz(Components(x)[-1]) <= 0]
     for r in base_sous_sol:
         print 'ERREUR : la base de l\'UC ' + Class(r) + str(Index(r)) + ' est sous le plan horizontal, Y1 sera fixé à 0.1'
-
     for r in sommet_sous_sol:
         print 'ERREUR : le sommet de l\'UC ' + Class(r) + str(Index(r)) + ' est sous le plan horizontal, Y2 sera fixé à 0.1'
 
-    tab_architecture += [[
+    tab_architecture = [[
              niveau(names[x]),#Order(x),#marche pas?
              names[x],
              topdia(Components(x)[0]),#diametre_base
@@ -435,6 +575,10 @@ def extract_architecture(mtg_file_path,nom_arbre,date,variete,SLA,densite_MS_ram
              Class(x) + str(Index(x)),
             ]for x in rm]
     #save(tab_architecture,'test.csv')
+
+    #=====================================#
+    # Generate info for remeauxmixte table#
+    #=====================================#
 
     if charge_fruits == None:
         tab_rameauxmixte = [[names[x],
@@ -481,62 +625,42 @@ def extract_architecture(mtg_file_path,nom_arbre,date,variete,SLA,densite_MS_ram
                         TMS_fruits,
                     ]for x in ram_mixtes]
 
-
-
-
+    #=====================================#
+    #   Generate info for arbre table     #
+    #=====================================#
     vb_masse_seche = sum([vol_uc(x)*densite_MS_rameaux for x in rm if not x in ram_mixtes])
     vb_masse_seche = vb_masse_seche if vb_masse_seche != None else 0#Pour les arbres jeunes (sans vieux bois), sum([]) = None
     vr_masse_seche = sum([vol_uc(x)*densite_MS_rameaux for x in rm])/SR #La masse sèche de vieilles racines est calculée en fonction de la masse des UC en croissance secondaire (vieux bois+tiges de rameaux mixte) et du shoot-root ratio.
     jr_masse_seche = sum([la_rameaux(x)/SLA + sum([vol_uc(y) for y in Sons(x)])*densite_MS_rameaux for x in ram_mixtes])/SR #La masse sèche des jeunes racines est calculée en fonction de la masse des pousses feuillées (tige+feuilles) et du shoot-root ratio.
 
-    tree_csv(nom_arbre,date,variete,vr_masse_seche, jr_masse_seche, vb_masse_seche,tab_architecture,tab_rameauxmixte)
+    #delete MTG in memory
     del m
-    return tree_sql(nom_arbre,date,variete,vr_masse_seche, jr_masse_seche, vb_masse_seche,tab_architecture,tab_rameauxmixte)
-
-def qualitree_nom_rameaux(rmx):
-    """ Défini le nom des rameaux qualitree
-    rmx (list of vtx) : liste des rameaux mixtes et du vieux bois.
-    Renvoie un dictionaire avec comme clef l'id du vtx et comme valeur le nom Qualitree"""
-    
-    chiffres = '123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ'
-    fathers = [Father(x) for x in rmx]
-    qnames = {rmx[fathers.index(None)]:'r0'}#le tronc n'a pas de pêre.
-    rmx2 = [rmx[fathers.index(None)]] #rameaux dont on a déterminé le nom qualitree mais pas celui de ses enfants
-    while len(rmx2) > 0:
-        vtx = rmx2[0]#le rameau sur lequel on travaille
-        childrens = [rmx[i] for i,x in enumerate(fathers) if x == vtx]#On récupère tous les enfants présents dans rmx (les autres enfants comme les pousses feuillées sont exclus)
-        
-        rmx2 = rmx2[1:]#On retire le rameau de la liste des rameaux dont il faut déterminer le nom des enfants
-        rmx2 += childrens #On rajoutte les enfants dans la liste
-        
-        if len(childrens)>0:#Si le rameau a des enfants on les nomme
-            vtx_metamers = Components(vtx)
-            childrens_metamer_position = [vtx_metamers.index(Father(Components(x)[0])) for x in childrens]#position du pêre des enfants dans vtx (à l'échelle du métamère)
-            sorted_metamer_position = sorted(childrens_metamer_position)
-            childrens_position = [sorted_metamer_position.index(x)+1 for x in childrens_metamer_position] #position des enfants entre eux (1 pour le premier, 2 pour le deuxième...).
-            
-            c_p=[]
-            for i in childrens_position:#Si il y a des doublons dans childrens_position on incrémente l'un d'entre eux (quand eux rameaux partent du même métamère)
-                if i not in c_p:
-                    c_p.append(i)
-                else:
-                    c_p.append(i+1)
-            childrens_position=c_p
-
-            if qnames[vtx]=='r0':#les fils du tronc sont nommées r1, r2, r3...
-                for k in range(len(childrens)):
-                    assert childrens_position[k] <= len(chiffres), 'Le rameau r0 a {rams} ramifications, ce qui est supérieur au nombre maximal de {max}'.format(rams=childrens_position[k],max=len(chiffres))
-                    qnames[childrens[k]]='r'+str(chiffres[childrens_position[k]-1])
-            else:#sinon ils ont le nom du père suivi de -0, -1, -2...
-                for k in range(len(childrens)):
-                    qnames[childrens[k]]=qnames[vtx]+'-'+str(chiffres[childrens_position[k]-1])
 
 
+    if userEllipse:
+      #To get an estimation of the ellipse we use PlantGL algorithms, hence the need of the 3D scene
+      sc = pgl.Scene(scene_file_path)
+      #Considering only the leaves assuming they have a specific colorname as in MAppleT
+      lvs = getLeavesOnly(sc)
+      #Computing the ellipse
+      ell = computeBoundingShape(lvs)
+      #Retrieving the info of that ellipse
+      cx,cy,cz,rx,ry,rz,angle_y = ellipseDesc(ell)
+      #For the moment the high and low cutting planes are defined at the top and bottom of the ellipse
+      coupe_h = cy+ry
+      #coupe_b = cy-ry
+      #trying to use the leaves BBox to define the low cutting plane
+      bbox = pgl.BoundingBox(lvs)
+      coupe_b = bbox.getZMin()*100
+      
 
-    return qnames
+      tab_arbre = [variete,vr_masse_seche, jr_masse_seche, vb_masse_seche, cx, cy, cz, rx, ry, rz, coupe_h, coupe_b, angle_y]
+      tree_sql(nom_arbre,date,tab_arbre,tab_architecture,tab_rameauxmixte, ellipseIN=True)
+    else:
+      tab_arbre = [variete,vr_masse_seche, jr_masse_seche, vb_masse_seche]
+      tree_sql(nom_arbre,date,tab_arbre,tab_architecture,tab_rameauxmixte, ellipseIN=False)
 
-def niveau(name):
-    return 0 if name == 'r0' else name.count('-')+1
 
-
+    tree_csv(nom_arbre,date,variete,vr_masse_seche, jr_masse_seche, vb_masse_seche,tab_architecture,tab_rameauxmixte)
+    #return tree_sql(nom_arbre,date,tab_arbre,tab_architecture,tab_rameauxmixte)
 
