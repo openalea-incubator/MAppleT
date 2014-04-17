@@ -83,12 +83,12 @@ class apex_data(object):
     #         'new_shoot']
     #The content of "states" were changed by Han on 09-05-2012
     states = ['dormant', 'large', 'medium', 'small', 'floral', 'trunk',
-              'new_shoot', 'sylleptic_short', 'sylleptic_medium', 'sylleptic_large']
+              'new_shoot', 'sylleptic_small', 'sylleptic_medium', 'sylleptic_large']
 
     def __init__(self, hlu=Frame(), observation='trunk',
                  terminal_expansion_rate=0.00002, minimum_size=0.00075,
                  maximum_size=0.006, minimum_length=4, maximum_length=70,
-                 expansion_period=300, target_radius=0.006):
+                 expansion_period=300, target_radius=0.006, sylleptic=False):
         """
         The arguments "expansion_period" and "target_radius" were added by Han
         on 14-04-2011.
@@ -172,7 +172,7 @@ class apex_data(object):
 
         #Added by Han on 06-07-2012
         #This is to avoid "1,2,3,4" growth units to be syllpetic at the first year
-        self.sylleptic = False
+        self.sylleptic = sylleptic
 
     def set_observation(self, observation):
         """set the apex observation
@@ -188,7 +188,7 @@ class apex_data(object):
         """
 
         if observation in apex_data.states:
-            #if observation == 'sylleptic_short':
+            #if observation == 'sylleptic_small':
             #    self._observation = 'small'
             #elif observation == 'sylleptic_medium':
             #    self._observation = 'medium'
@@ -209,33 +209,33 @@ class apex_data(object):
         """return observation corresponding to the current position"""
         index = self.sequence[self.sequence_position][1]
         if index == 0:
-            self.sylleptic = False
+            #self.sylleptic = False
             return 'dormant'
         elif index == 1:
-            self.sylleptic = False
+            #self.sylleptic = False
             return 'large'
         elif index == 2:
-            self.sylleptic = False
+            #self.sylleptic = False
             return 'medium'
         elif index == 3:
-            self.sylleptic = False
+            #self.sylleptic = False
             return 'small'
         elif index == 4:
-            self.sylleptic = False
+            #self.sylleptic = False
             return 'floral'
         #The following indexes were added by Han on 30-04-2012
         elif index == 5:
-            self.sylleptic = True
-            #return 'sylleptic_short'
-            return 'small'
+            #self.sylleptic = True
+            return 'sylleptic_small'
+            #return 'small'
         elif index == 6:
-            self.sylleptic = True
-            #return 'sylleptic_medium'
-            return 'medium'
+            #self.sylleptic = True
+            return 'sylleptic_medium'
+            #return 'medium'
         elif index == 7:
-            self.sylleptic = True
-            #return 'sylleptic_large'
-            return 'large'
+            #self.sylleptic = True
+            return 'sylleptic_large'
+            #return 'large'
         #should never reach this line
 
     def max_terminal_radius_target(self):

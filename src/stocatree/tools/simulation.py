@@ -33,10 +33,11 @@ class SimulationStocatree(SimulationInterface):
     def __init__(self, dt=1, starting_date=2000, ending_date=2010,seed=1163078257):
         SimulationInterface.__init__(self, dt=dt, starting_date=starting_date, ending_date=ending_date)
 
+
         mydt = datetime.timedelta(dt)
         self.events.add_event('bud_break',
                               datetime.datetime(starting_date, 4, 15),
-                              duration=datetime.timedelta(1))
+                              duration=datetime.timedelta(0))
         self.events.add_event('new_cambial_layer',
                               datetime.datetime(starting_date, 5, 15),
                               duration=mydt)

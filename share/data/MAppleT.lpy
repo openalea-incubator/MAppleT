@@ -1,25 +1,14 @@
 __revision__ = " $Id: stocatree.lpy 11526 2011-12-06 14:48:34Z liqihan $ "
 
-#if "options" in globals().keys():
-#  print "seed already available at the begining: {0}".format(options.general.seed)
 # First, read the configuration file
 from openalea.plantik.tools.config import ConfigParams
 if "options" not in globals().keys():
-  print "Reading MAppleT.ini file mym, if not present...crash"
+  print "Reading MAppleT.ini file myself, if not present...crash"
   options = ConfigParams('MAppleT.ini')
 
 ###### FIXING THE RANDOM SEED ##########################
-#print "####################### FIXING RANDOM SEED ####################"
 import random
 random.seed(int(options.general.seed))
-#print "python random value {0}".format(random.uniform(-10,10))
-
-# This is used to fix the seed when generating Markov chain, added by Han on 12-04-2011
-#from openalea.sequence_analysis import _sequence_analysis as sa
-# This is to fix the seed when generating Markov chain, added by Han on 12-04-2011
-#sa.srand(int(options.general.seed))
-#print "C++ random value {0}".format(sa.rand())
-#print "###############################################################"
 
 ########################################################
 
@@ -82,6 +71,7 @@ gravity = pgl.Vector3(0.0, 0.0, -9.81);  #// in m s^-2 original mappleT
 
 
 verbose = options.general.verbose
+debug = options.general.debug
 
 output_directory = options.general.output_dir
 ensureLocalDir(output_directory)
@@ -102,8 +92,8 @@ simulation = SimulationStocatree(dt=options.general.time_step,
 
 #date = datetime.datetime.strptime(date, "%Y-%m-%d")
 #simulation.events.add_event('star', datetime.datetime.strptime(options.output.light_date, "%Y-%m-%d"), duration=datetime.timedelta(0), periodic=False)
-simulation.events.add_event('star', datetime.datetime.strptime(options.output.light_date, "%Y-%m-%d"), duration=datetime.timedelta(1), periodic=options.output.light_yearly)
-simulation.events.add_event('qualitree_export', datetime.datetime.strptime(options.qualitree.date, "%Y-%m-%d"), duration=datetime.timedelta(1), periodic=options.qualitree.yearly)
+simulation.events.add_event('star', datetime.datetime.strptime(options.output.light_date, "%Y-%m-%d"), duration=datetime.timedelta(0), periodic=options.output.light_yearly)
+simulation.events.add_event('qualitree_export', datetime.datetime.strptime(options.qualitree.date, "%Y-%m-%d"), duration=datetime.timedelta(0), periodic=options.qualitree.yearly)
 
 
 # Read PGLshape surfaces
@@ -134,10 +124,10 @@ markov.hsm_98_long = HiddenSemiMarkov(get_shared_data('fmodel_fuji_16_65_y5_98.t
 #!!! apices and leaves are specific to a metamer later on a deepcopy is used.
 
 ##The following lines were moved to Start() by Han on 01-03-2012
-#temp = {}
-#temp.update(options.apex.__dict__)
-#temp.update(options.markov.__dict__)
-#apex_parameters = temp
+temp = {}
+temp.update(options.apex.__dict__)
+temp.update(options.markov.__dict__)
+apex_parameters = temp
 #leaf_parameters = options.leaf.__dict__
 #fruit_parameters = options.fruit.__dict__
 
@@ -157,6 +147,7 @@ def saveDay():
       return 4 < simulation.date.month < 11
     else:
       return  simulation.date.month == options.output.save_month
+  return False
 
 ###################################
 # DONT CHANGE ANYTHING HERE BELOW #
@@ -218,17 +209,13 @@ def Start():
     tree            = Tree(**options.tree.__dict__)
     wood            = Wood(**options.wood.__dict__)
     internode       = Internode(**options.internode.__dict__)
-    ##The following lines were added by Han on 01-03-2012
-    temp = {}
-    temp.update(options.apex.__dict__)
-    temp.update(options.markov.__dict__)
-    apex_parameters = temp
     leaf_parameters = options.leaf.__dict__
     fruit_parameters = options.fruit.__dict__
 
 
     if verbose:
       print "Simulation seed:", simulation.seed
+      print "Tree floral branching angle = {0}, instead of {1}".format(tree.floral_branching_angle, options.tree.floral_angle)
     # init the data to store the required outputs (sequence, lstring, mtg, ...)
     data.init()
 
@@ -262,7 +249,7 @@ def StartEach():
     #to allow the scene can be directly saved in EndEach()
 
     #if simulation.phase == update_structure and ( (simulation.date.day % options.stocatree.dt_biomeca == 0 and numerical_resolution_counter == 1) or numerical_resolution_counter == 0):
-    if simulation.phase == update_structure and numerical_resolution_counter == 0:
+    if( (simulation.phase == update_structure and numerical_resolution_counter == 0) or simulation.phase == pruning_fw or simulation.phase == pruning_bw):
       frameDisplay(True)
     else:
       frameDisplay(False)
@@ -319,7 +306,8 @@ def StartEach():
 
         bud_date = datetime.datetime(*tp_dt.bud_break()) # * is required because bud_break() returns a tuple
       #if simulation.date.year == bud_date.year and simulation.date.month == bud_date.month and simulation.date.day == bud_date.day:
-      if simulation.date >= bud_date and simulation.date <= bud_date + datetime.timedelta(1):
+      #if simulation.date >= bud_date and simulation.date <= bud_date + datetime.timedelta(1):
+      if simulation.date == bud_date:
         bud_break = True
       else:
         bud_break = False
@@ -359,7 +347,6 @@ def StartEach():
 
 def EndEach(lstring,scene):
 
-    #print("{2} Phase {0} with NC= {1}".format(simulation.phase, numerical_resolution_counter, simulation.date))
     #global current_experiment
 
     #if simulation.date > simulation.ending_date:
@@ -623,17 +610,6 @@ def EndEach(lstring,scene):
           simulation.unload_save()
           f.close()
               
-          #print "############ THE STRING ################"
-          #for l in thestring:
-          #  if isinstance(l,str):
-          #    print l
-          #  elif isinstance(l,metamer_data):
-          #    print 'Metamer'
-          #  elif isinstance(l,apex_data):
-          #    print 'Apex'
-          #  elif isinstance(l,growth_unit_data):
-          #    print 'GU'
-
           useGroup(update_parameters)
           simulation.phase = update_parameters
           #frameDisplay(False)
@@ -650,7 +626,8 @@ def End(lstring,scene):
     data.save()
 
     endtime = time.time() - starttime
-    print("Simulation duration: {0}".format(endtime))
+    if verbose:
+      print("Simulation duration: {0}".format(endtime))
 
     if options.stocatree.movie is True:
         from openalea.plantik.tools.movies import create_movie
@@ -719,21 +696,10 @@ axiom():
       produce
     except:
       print "Failed to load simulation, starting from scratch"
-      temp = {}
-      temp.update(options.apex.__dict__)
-      temp.update(options.markov.__dict__)
-      apex_parameters = temp
       a = apex_data(tree.initial_hlu, 'trunk', **apex_parameters)
       produce  root() apex(a)
 
   else:
-    ##The following four lines were added by Han on 01-03-2012, to make sure
-    ##the apex parameters can be updated through "options" that is refreshed
-    ##outside lpy (in parasuper_pc.py) for sensitivity analysis.
-    temp = {}
-    temp.update(options.apex.__dict__)
-    temp.update(options.markov.__dict__)
-    apex_parameters = temp
     a = apex_data(tree.initial_hlu, 'trunk', **apex_parameters)
     produce  root() apex(a)
 
@@ -857,15 +823,16 @@ group 3:
 
 apex(a):
 
-    if(a.sequence_position == 0 and a.get_observation()!='dormant' and \
-       (a.parent_observation == 'floral' or bud_break or \
-       (sylleptic_year and a.year < simulation.date.year and (a.get_observation() == 'small' or a.get_observation() == 'medium' or a.get_observation() == 'large')))):
-      #print "Apex with obs {0} and parent obs {1} generate sequence:".format(a.get_observation(), a.parent_observation)
-      print("Group 3: New sequence of type {0} from parent_obs {2} @ {1}".format(a._observation, simulation.date, a.parent_observation))
+    #if(a.sequence_position == 0 and a.get_observation()!='dormant' and \
+    #   (a.parent_observation == 'floral' or bud_break or \
+    #   (sylleptic_year and a.year < simulation.date.year and (a.get_observation() == 'small' or a.get_observation() == 'medium' or a.get_observation() == 'large')))):
+    if(a.sequence_position == 0 and a.get_observation()!='dormant' and (a.sylleptic or bud_break) ):
+      if debug:
+        print("Group 3: New sequence of type {0} from parent_obs {2} @ {1} (syll={3})".format(a._observation, simulation.date, a.parent_observation, a.sylleptic))
       a.parent_observation = a.get_observation()
 
       #Added by Han on 15-05-2012
-      if a.parent_observation == 'sylleptic_short':
+      if a.parent_observation == 'sylleptic_small':
           a.parent_observation = 'small'
           a.set_observation('small')
       elif a.parent_observation == 'sylleptic_medium':
@@ -878,7 +845,6 @@ apex(a):
       a.sequence  = generate_sequence(a.get_observation(),\
           markov, simulation.date.year, options.stocatree.second_year_draws,
           select_trunk=[int(options.stocatree.select_trunk)])
-      #print a.sequence
       
       a.sequence_position = len(a.sequence)
       if (a.get_observation()=='trunk'):
@@ -898,6 +864,8 @@ apex(a):
       #record the unit id that this apex belongs to (the id values start from 0)
       a.parent_unit_id = tree.growth_units
       tree.growth_units += 1
+      if debug:
+        print "This is shoot {0} of length {1}".format(a.parent_unit_id, a.sequence_position)
 
       #update counts
       if options.output.counts:
@@ -930,8 +898,6 @@ apex(a):
       #at the same year
       a.year = simulation.date.year
 
-      #print "Apex with obs {0} and parent obs {1} generate sequence:".format(a.get_observation(), a.parent_observation)
-
       nproduce growth_unit(growth_unit_data(tree.growth_units, simulation.date.year, a.parent_observation == 'floral')) apex(a)
 
     else:
@@ -949,6 +915,11 @@ metamer(m) < apex(a):
     #Modified by Han on 12-07-2012 (Since the internode._plastochron is never changed in the internode module, the "options.internode.plastochron" could be used directly here)
     if (a.sequence_position > 0 and m.age >= options.internode.plastochron):
         a.sequence_position-=1
+        
+        if a.sequence_position == 0:
+          a.sylleptic = False
+
+
         flower = (a.sequence_position == 0 and a.parent_observation=='floral')
 
         #If metamer m was also produced by the same apex, i.e. its year == simulation.year, then increase metamer number
@@ -956,7 +927,6 @@ metamer(m) < apex(a):
             number = m.number + 1
         else:
             number = 1
-        #print fruit_parameters
 
         ##The following lines were added by Han on 01-03-2012, to allow the leaf
         ##and fruit parameters to be updated according to the re-definition outside lpy
@@ -976,7 +946,6 @@ metamer(m) < apex(a):
         #Added by Han on 11-07-2012
         mn.sylleptic = a.sylleptic
 
-        #print a.sequence_position, a.sequence[a.sequence_position][0], a.sequence[a.sequence_position][1]
         #produce metamer(mn) apex(a)
         #Modified by Han on 16-05-2012
         if not growth_pause:
@@ -991,8 +960,6 @@ metamer(m) < apex(a):
 #Case of the first metamer of a new GU
 apex(a):
 
-    #if Debug:print 'APEX seq pos=',a.sequence_position
-    #if (a.sequence_position > 0):
     if (a.sequence_position > 0):
         a.sequence_position -= 1
         branching_angle = tree.branching_angle;
@@ -1016,7 +983,6 @@ apex(a):
         #Added by Han on 11-07-2012
         m.sylleptic = a.sylleptic
 
-        #print a.sequence_position, a.sequence[a.sequence_position][0], a.sequence[a.sequence_position][1]
         #produce metamer(m) apex(a)
         #Modified by Han on 16-05-2012
         if not growth_pause:
@@ -1039,15 +1005,7 @@ metamer(m) > metamer(mr) apex(a):
         m.branching_angle = tree.floral_branching_angle
         hlu = rotate_frame_at_branch(m.hlu, m.branching_angle, m.phyllotactic_angle);
 
-        ##The following four lines were added by Han on 01-03-2012, to make sure
-        ##the apex parameters can be updated through "options" that is refreshed
-        ##outside lpy (in parasuper_pc.py) for sensitivity analysis.
-        temp = {}
-        temp.update(options.apex.__dict__)
-        temp.update(options.markov.__dict__)
-        apex_parameters = temp
-
-        sylleptic_apex = apex_data(hlu, terminal_fate(simulation.date.year, 'floral'), **apex_parameters)
+        sylleptic_apex = apex_data(hlu, terminal_fate(simulation.date.year, 'floral'), sylleptic=True, **apex_parameters)
         sylleptic_apex.parent_observation = 'floral'
 
         if m.parent_fbr_id == 0:
@@ -1058,7 +1016,8 @@ metamer(m) > metamer(mr) apex(a):
             sylleptic_apex.parent_fbr_id = tree.first_branches
         else:
             sylleptic_apex.parent_fbr_id = m.parent_fbr_id
-
+        if debug:
+          print "Producing floral apex with syll {}".format(a.sylleptic)
         produce metamer(m) SB() branch() apex(sylleptic_apex) EB()
 
 metamer(m):
@@ -1079,19 +1038,25 @@ metamer(m):
 
     ## Creating new lateral apex if metamer is not dormant, not already developed and if it's budbreak or trunk sylleptic
 
-    if (m.observation!= 'dormant' and  not m.developped and (bud_break or ((m.observation == 'small' or m.observation == 'medium' or m.observation == 'large') and m.parent_observation == "trunk" and m.sylleptic == True))):
+    #if (m.observation!= 'dormant' and  not m.developped and (bud_break or ((m.observation == 'small' or m.observation == 'medium' or m.observation == 'large') and m.parent_observation == "trunk" and m.sylleptic == True))):
+    if (m.observation!= 'dormant' and  not m.developped ):
         m.developped = True
         hlu = rotate_frame_at_branch(m.hlu, m.branching_angle, m.phyllotactic_angle)
 
-        ##The following four lines were added by Han on 01-03-2012, to make sure
-        ##the apex parameters can be updated through "options" that is refreshed
-        ##outside lpy (in parasuper_pc.py) for sensitivity analysis.
-        temp = {}
-        temp.update(options.apex.__dict__)
-        temp.update(options.markov.__dict__)
-        apex_parameters = temp
+        if m.observation == 'sylleptic_small':
+          apexobs = 'small'
+          apexsyll = True
+        elif m.observation == 'sylleptic_medium':
+          apexobs = 'medium'
+          apexsyll = True
+        elif m.observation == 'sylleptic_large':
+          apexobs = 'large'
+          apexsyll = True
+        else:
+          apexobs = m.observation
+          apexsyll = False
 
-        a = apex_data(hlu, m.observation, **apex_parameters)
+        a = apex_data(hlu, observation=apexobs, sylleptic=apexsyll, **apex_parameters)
 
         if m.parent_fbr_id == 0:
             tree.first_branches +=1
@@ -1101,7 +1066,8 @@ metamer(m):
             a.parent_fbr_id = tree.first_branches
         else:
             a.parent_fbr_id = m.parent_fbr_id
-        print("Group 4: Generate lateral Apex @ {}".format(simulation.date))
+        if debug:
+          print("Group 4: Metamer {2} of shoot {3} generates lateral Apex to generate {1} shoot @ {0}".format(simulation.date, a.get_observation(), m.number, m.parent_unit_id))
         produce metamer(m) SB() branch() apex(a) EB()
     else:
         produce metamer(m)
@@ -1111,7 +1077,7 @@ metamer(m):
 #===============================================================#
 group 5:
 
-X < metamer(m):
+metamer(m) > X:
   if not m.cut and not m.to_prune:
     m.cut = True
     m.to_prune = True
@@ -1120,7 +1086,25 @@ X < metamer(m):
     m.to_prune = False
     produce metamer(m)
   elif m.cut:
-    produce Cut()
+    #produce Cut()
+    m.cut = False
+    m.to_prune = False
+    m.branching_angle = tree.floral_branching_angle
+    hlu = rotate_frame_at_branch(m.hlu, m.branching_angle, m.phyllotactic_angle);
+
+    pruning_apex = apex_data(hlu, m.parent_observation, **apex_parameters)
+
+    if m.parent_fbr_id == 0:
+      tree.first_branches +=1
+      #The parent_fbr_id ranges from 0 to tree.first_branches (rather than to tree.frist-branches-1)
+      #This is because, the trunk is regarded by branch 0 as default
+      #Thus the id of the first real branch should be 1
+      pruning_apex.parent_fbr_id = tree.first_branches
+    else:
+      pruning_apex.parent_fbr_id = m.parent_fbr_id
+    if verbose:
+      print "Producing pruning apex with syll {0} and angle {1}".format(pruning_apex.sylleptic, m.branching_angle)
+    produce metamer(m) SB() branch() apex(pruning_apex) EB() Cut()
 
 metamer(ml) SB() branch() << metamer(m):
   if not ml.to_prune and not m.cut:
@@ -1185,7 +1169,6 @@ EB():
   global thestring
   thestring.append('eb')
 
-#print thestring
 
 
 #===============================================================#
@@ -1205,7 +1188,7 @@ root():
     ground_radius = max(1.0,  (can_x_max - can_x_min)*5.0, (can_y_max - can_y_min)*5.0 )
 
     if options.general.pruning:
-      produce SB() SetColor(colors.ground) PglShape(pgl.Cylinder(5,0.5,True,50)) EB();
+      produce SB() SetColor(colors.ground) PglShape(pgl.Cylinder(ground_radius,0.5,True,50)) EB();
       #produce SB() SetColor(colors.ground) PglShape(ground_surface, 10.0) EB();
     else:
       #produce SB() f(-3) SetColor(colors.background) Label(dateLabel) f(3) SetColor(colors.ground) PglShape(pgl.Cylinder(5,0.5,True,50)) EB();
