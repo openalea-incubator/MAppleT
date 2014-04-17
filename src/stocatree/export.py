@@ -2,19 +2,19 @@
 #-*- encoding: Latin-1 -*-
 
 #-------------------------------------------------------------------------------
-# Name:         exploreScene
-# Purpose:      A script to extract information from a PlantGL scene.
+# Name:         export
+# Purpose:      A script to extract information from a MAppleT simulation for exportation.
 # Author:       Da Silva
 # Created:      03/26/2014
 # Copyright:    (c) Da Silva 2014
 # Licence:      CeCill/LGPL
 #-------------------------------------------------------------------------------
-#from extraction_rameaux import *
 from openalea.mtg.aml import *
 from math import pi
 
 import random
 import openalea.plantgl.all as pgl
+import os.path as op
 
 #===========================================================#
 # Utils functions to explore and extract data from MTG      #
@@ -439,7 +439,7 @@ def qualitree_metamer(rmx, names):
 
 #===========================================================#
 
-def tree_sql(nom_arbre, date, arbre, architecture,rameauxmixte, ellipseIN=False):
+def tree_sql(save_pth, nom_arbre, date, arbre, architecture,rameauxmixte, ellipseIN=False):
     """
         Génère le code sql permettant de supprimer un arbre dans la base de donnée de qualitree
         Renvoie la requête SQL en string
@@ -481,27 +481,28 @@ def tree_sql(nom_arbre, date, arbre, architecture,rameauxmixte, ellipseIN=False)
     valeurs_sucres = (0.0018, 0.0104, 0.0185, 0.0182)#Valeurs "bidon" de teneur en sucre des fruits (nécessaire pour le modèle mais n'existe pas chez le pommier). Les valeurs prises sont celles de la variété alexandra.
     ins_ram = [{'nom_arbre': nom_arbre , 'nom_rameau': rameau[0]  , 'date': date , 'tl_masse_seche': rameau[1], 'f2_concent_sorbitol': valeurs_sucres[0] , 'f2_concent_sucrose': valeurs_sucres[1] , 'f2_concent_glucose': valeurs_sucres[2] , 'f2_concent_fructose': valeurs_sucres[3] , 'f2_nombre_unites': rameau[2] , 'f2_masse_seche': rameau[3] , 'pf1_nombre_unites': rameau[4] , 'pf1_masse_seche': rameau[5], 'pf2_nombre_unites': rameau[6] , 'pf2_masse_seche': rameau[7], 'pf3_nombre_unites': rameau[8] , 'pf3_masse_seche': rameau[9], 'f2_tms_pulpe': rameau[11]}for rameau in rameauxmixte]
     sql += insert_into("rameauxmixte",header,ins_ram)
-    f = open(str(nom_arbre)+'_'+str(date)+'.sql', 'w')
+    f = open(op.join(save_pth, str(nom_arbre)+'_'+str(date)+'.sql'), 'w')
     f.write(sql)
     f.close()
 
     #return sql
 
 
-def tree_csv(nom_arbre, date, variete, vr_masse_seche, jr_masse_seche, vb_masse_seche, architecture,rameauxmixte):
+def tree_csv(save_pth, nom_arbre, date, variete, vr_masse_seche, jr_masse_seche, vb_masse_seche, architecture,rameauxmixte):
     #table "architecture" (géométrie rammeaux mixte + vieux bois)
     header = ['index','nom_arbre','niveau', 'nom_rameau', 'annee', 'diametre_base', 'diametre_ext', 'metamere', 'x1', 'y1', 'z1', 'x2', 'y2', 'z2', 'longueur']
     ins_architecture = [{'index': rameau[12],'nom_arbre':nom_arbre,'niveau':rameau[0], 'nom_rameau':rameau[1], 'annee':int(date.split("-")[0]), 'diametre_base': rameau[2], 'diametre_ext' : rameau[3], 'metamere' : rameau[4], 'x1' :rameau[5], 'y1':rameau[6], 'z1':rameau[7], 'x2':rameau[8], 'y2':rameau[9], 'z2':rameau[10], 'longueur':rameau[11]} for rameau in architecture]
-    save_csv(header, ins_architecture, str(nom_arbre) + '_' + str(date) + "_architecture.csv")
+    save_csv(header, ins_architecture, op.join(save_pth, str(nom_arbre) + '_' + str(date) + "_architecture.csv"))
     
     #table "rameauxmixte" (matière sèche, concentration en sucres, nombre de pousses feuillées et de fruits...).
     header = ['index','nom_arbre', 'nom_rameau', 'date', 'tl_masse_seche', 'f2_tms_pulpe', 'f2_concent_sorbitol', 'f2_concent_sucrose', 'f2_concent_glucose', 'f2_concent_fructose', 'f2_nombre_unites', 'f2_masse_seche', 'pf1_nombre_unites', 'pf1_masse_seche', 'pf2_nombre_unites', 'pf2_masse_seche', 'pf3_nombre_unites', 'pf3_masse_seche']
     valeurs_sucres = (0.0018, 0.0104, 0.0185, 0.0182)#Valeurs "bidon" de teneur en sucre des fruits (nécessaire pour le modèle mais n'existe pas chez le pommier). Les valeurs prises sont celles de la variété alexandra.
     ins_ram = [{'index': rameau[10],'nom_arbre': nom_arbre , 'nom_rameau': rameau[0]  , 'date': date , 'tl_masse_seche': rameau[1], 'f2_concent_sorbitol': valeurs_sucres[0] , 'f2_concent_sucrose': valeurs_sucres[1] , 'f2_concent_glucose': valeurs_sucres[2] , 'f2_concent_fructose': valeurs_sucres[3] , 'f2_nombre_unites': rameau[2] , 'f2_masse_seche': rameau[3], 'pf1_nombre_unites': rameau[4] , 'pf1_masse_seche': rameau[5], 'pf2_nombre_unites': rameau[6] , 'pf2_masse_seche': rameau[7], 'pf3_nombre_unites': rameau[8] , 'pf3_masse_seche': rameau[9], 'f2_tms_pulpe': rameau[11]} for rameau in rameauxmixte]
-    save_csv(header, ins_ram, str(nom_arbre) + '_' + str(date) + "_rameauxmixtes.csv")
+    save_csv(header, ins_ram, op.join(save_pth, str(nom_arbre) + '_' + str(date) + "_rameauxmixtes.csv"))
 
 #===========================================================#
-def extract_architecture(mtg_file_path, scene, nom_arbre,date,variete,SLA,densite_MS_rameaux,TMS_fruits,SR,userEllipse=True, charge_fruits=None,seed=None):
+
+def export2qualitree(save_pth, mtg_file_path, leaf_scene, nom_arbre,date,variete,SLA,densite_MS_rameaux,TMS_fruits,SR,userEllipse=True, charge_fruits=None,seed=None):
     '''
     Converti un fichier .mtg généré par MAppleT en une architecure au format Qualitree. Le script .sql est renvoyé en sorti de cette fonction (il faudra l'enregistrer dans un fichier),
     des fichiers .csv correspondants aux tables de la bdd Qualitree sont aussi générés (cela permet de visualiser le résultat plus facilement qu'en SQL).
@@ -640,10 +641,10 @@ def extract_architecture(mtg_file_path, scene, nom_arbre,date,variete,SLA,densit
     if userEllipse:
       #To get an estimation of the ellipse we use PlantGL algorithms, hence the need of the 3D scene
       #The scene should be a pgl.Scene but could also be the path to a saved bgeom scene
-      if type(scene) == str:
-        sc = pgl.Scene(scene)
+      if type(leaf_scene) == str:
+        sc = pgl.Scene(leaf_scene)
       else:
-        sc = scene
+        sc = leaf_scene
 
       assert type(sc) == pgl.Scene
 
@@ -661,17 +662,17 @@ def extract_architecture(mtg_file_path, scene, nom_arbre,date,variete,SLA,densit
       coupe_h = cy+ry
       #coupe_b = cy-ry
       #trying to use the leaves BBox to define the low cutting plane
-      bbox = pgl.BoundingBox(lvs)
+      bbox = pgl.BoundingBox(sc)
       coupe_b = bbox.getZMin()*100
       
 
       tab_arbre = [variete,vr_masse_seche, jr_masse_seche, vb_masse_seche, cx, cy, cz, rx, ry, rz, coupe_h, coupe_b, angle_y]
-      tree_sql(nom_arbre,date,tab_arbre,tab_architecture,tab_rameauxmixte, ellipseIN=True)
+      tree_sql(save_pth, nom_arbre,date,tab_arbre,tab_architecture,tab_rameauxmixte, ellipseIN=True)
     else:
       tab_arbre = [variete,vr_masse_seche, jr_masse_seche, vb_masse_seche]
-      tree_sql(nom_arbre,date,tab_arbre,tab_architecture,tab_rameauxmixte, ellipseIN=False)
+      tree_sql(save_pth, nom_arbre,date,tab_arbre,tab_architecture,tab_rameauxmixte, ellipseIN=False)
 
 
-    tree_csv(nom_arbre,date,variete,vr_masse_seche, jr_masse_seche, vb_masse_seche,tab_architecture,tab_rameauxmixte)
+    tree_csv(save_pth, nom_arbre,date,variete,vr_masse_seche, jr_masse_seche, vb_masse_seche,tab_architecture,tab_rameauxmixte)
     #return tree_sql(nom_arbre,date,tab_arbre,tab_architecture,tab_rameauxmixte)
 

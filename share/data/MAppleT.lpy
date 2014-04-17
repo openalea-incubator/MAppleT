@@ -65,6 +65,7 @@ from openalea.stocatree.temperature_effects import Tp_date
 from openalea.stocatree.srandom import boolean_event
 from openalea.stocatree.csv import ExprecCSV
 from openalea.stocatree.rw_tools import ensureLocalDir, Recorder
+from openalea.stocatree.export import export2qualitree
 
 
 # This is to use the scene to calculate the leaf area, silhouette area as well as STAR
@@ -102,6 +103,7 @@ simulation = SimulationStocatree(dt=options.general.time_step,
 #date = datetime.datetime.strptime(date, "%Y-%m-%d")
 #simulation.events.add_event('star', datetime.datetime.strptime(options.output.light_date, "%Y-%m-%d"), duration=datetime.timedelta(0), periodic=False)
 simulation.events.add_event('star', datetime.datetime.strptime(options.output.light_date, "%Y-%m-%d"), duration=datetime.timedelta(1), periodic=options.output.light_yearly)
+simulation.events.add_event('qualitree_export', datetime.datetime.strptime(options.qualitree.date, "%Y-%m-%d"), duration=datetime.timedelta(1), periodic=options.qualitree.yearly)
 
 
 # Read PGLshape surfaces
@@ -357,7 +359,7 @@ def StartEach():
 
 def EndEach(lstring,scene):
 
-    print("{2} Phase {0} with NC= {1}".format(simulation.phase, numerical_resolution_counter, simulation.date))
+    #print("{2} Phase {0} with NC= {1}".format(simulation.phase, numerical_resolution_counter, simulation.date))
     #global current_experiment
 
     #if simulation.date > simulation.ending_date:
@@ -528,6 +530,27 @@ def EndEach(lstring,scene):
               stf.write(headers)
               stf.write(vals)
               stf.close()
+
+          #-------------------------------------------------------------------------#
+          #             Export required data to be used in  QualiTree               #
+          #-------------------------------------------------------------------------#
+
+          if numerical_resolution_counter == 0 and options.qualitree.export and simulation.events.qualitree_export.active:
+            sub_dir = op.join(output_directory, "{0}_{1}".format(simulation.date.year, simulation.date.month ), options.qualitree.prefix )
+            #MTG is required so generating one for that specific purpose
+            ensureLocalDir(sub_dir)
+            data.mtg.build_filename( op.join(sub_dir, current_experiment  ) )
+            data.mtg.init()
+            if verbose:
+              print "Exporting MTG for QualiTree as: ", data.mtg.filename
+            data.mtg.save(lstring, simulation.date, tree.trunk_radius)
+
+            #Then the 3D scene containing only the leaves is also required
+            lvs = pgl.Scene([ sh for sh in scene if sh.appearance.getName() == "Color_15"])
+
+            export2qualitree(save_pth = sub_dir, mtg_file_path = data.mtg.filename, leaf_scene = lvs, nom_arbre = "MAppleT_"+current_experiment, date = options.qualitree.date, variete = options.qualitree.variety , SLA = options.qualitree.sla, densite_MS_rameaux = options.qualitree.specific_weight, TMS_fruits = options.qualitree.fruit_dwc, SR = options.qualitree.shoot_root_ratio, userEllipse=True)
+            
+
 
           #-------------------------------------------------------------------------#
 
