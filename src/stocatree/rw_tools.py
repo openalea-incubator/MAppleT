@@ -15,7 +15,7 @@ import os
 def ensureLocalDir(dir_name):
   d = os.path.join(os.getcwd(), dir_name)
   if not os.path.exists(d):
-    os.mkdir(d)
+    os.makedirs(d)
 
 def ensureFile(file_pth):
   if not os.path.exists(file_pth):
