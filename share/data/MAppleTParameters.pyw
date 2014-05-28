@@ -104,22 +104,22 @@ class myLineEdit(QtGui.QWidget):
 class MyWindow(QtGui.QMainWindow):
   def __init__(self):
     QtGui.QMainWindow.__init__(self)
-    
+
     self.confp=None
     self._loadIni_()
    
     #Puts the settings widgets into tabs
     self.centerTabs = QtGui.QTabWidget(self)
 
-    self.createActions()
-    self.createMenus()
-    self.resize(800,600)
     self._genSectionTabs_()
    
     self.setCentralWidget(self.centerTabs)
     
     self.setWindowTitle(' MAppleT Parameter Editor')
 
+    self.createActions()
+    self.createMenus()
+    self.resize(800,600)
 
     self.lsys = lpy.Lsystem(self.confp.general.filename, {"options":self.confp})
 

@@ -405,7 +405,7 @@ class mtg(output):
                         m.ta_pgl, m.sa_pgl, m.star_pgl,\
                         m.parent_unit_id, m.parent_fbr_id, i,\
                         m.zone, m.radius, m.fruit.mass))
-            elif elt.name=='apex':
+            elif elt.name=='apex' and not previous == 'branch':
                 a = elt
                 #This assert was filtered by Han on 06=07-2012 because of an
                 #assert error after the modification of plastochrons

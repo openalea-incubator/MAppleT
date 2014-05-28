@@ -327,7 +327,7 @@ def generate_bounded_hsm_sequence(hsm, lower_bound, upper_bound):
     if count == 1000:
         raise ValueError('to be done. max count limit reached in generate_bounded_hsm_sequence')
     if count > 100:
-        print 'Warning, count in generatE_bounded_hsm_sequence was large :%d' % count
+        print 'Warning, count in generate_bounded_hsm_sequence was large :%d' % count
     #print 'Counts hsm = ', count
     return sequence
 
@@ -545,8 +545,7 @@ def generate_sequence(obs, markov=None, year=1994, second_year_draws=False,
             elif res == 2:
                 return generate_bounded_hsm_sequence(markov.hsm_long, 26, 41)
             elif res == 3:
-                return generate_bounded_hsm_sequence(markov.hsm_long, 41,
-                                                     markov.maximum_length)
+                return generate_bounded_hsm_sequence(markov.hsm_long, 41, markov.maximum_length)
     else:
         raise("ERROR: A bad sequence observation (%s) was passed to generate_sequence().\n" % obs)
 
