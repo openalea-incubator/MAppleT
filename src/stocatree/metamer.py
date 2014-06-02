@@ -97,7 +97,7 @@ class metamer_data(object):
         Leaf, internode, fruit and wood must be provided
 
         :param bool floral:
-        :param int number:
+        :param int number: rank of the metamer in the GU
         :param Frame hlu:
         :param int zone:
         :param int observation:
@@ -259,7 +259,7 @@ class metamer_data(object):
                 self.fruit.state = 'fruit_scar'
                 self.fruit.mass = 0.
             else:
-                self.fruit.mass = self.fruit.compute_mass()
+                self.fruit.mass = self.fruit.compute_mass() #useless ? mass already set by compute_mass
         elif self.fruit._state == 'fruit_scar':
             self.fruit.mass = 0.
 

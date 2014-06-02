@@ -21,16 +21,6 @@
 import datetime
 import os.path as op
 
-output_options = {
-    'sequences' : True,
-    'l_string'  : True,
-    'light_interception' : True,
-    'counts'    : True,
-    'trunk'    : True,
-    'leaves'    : False,
-    'mtg'       : True}
-
-
 
 class output(object):
     """A base class to manage outputs in stocatree.
@@ -51,15 +41,13 @@ class output(object):
 
 
     """
-    # The "directory" parameter was added by Han on 17-04-2011
-    # to allow saving the output files to an designated directory
-    def __init__(self, directory='', filename=None, verbose=False, frequency=1., tag=None):
-      self.file = None
+    def __init__(self, directory='', init_date=datetime.datetime(1994,1,1), filename=None, verbose=False, frequency=1., tag=None, extra=None, ext='.csv'):
       self.basename = filename
       self.directory = directory
       self.tag = tag
-      self.filename = None
-      self.build_filename()
+      self.init_date = init_date
+      self.build_filename(extra, ext)
+      self.file = None
 
       self.verbose = verbose
       self.frequency = frequency
@@ -68,8 +56,7 @@ class output(object):
       self.period = 365.0 / self.frequency
 
 
-    #The build_filename() method was rewritten by Han on 19-04-2011
-    def build_filename(self, extra=None):
+    def build_filename(self, extra=None, ext='.csv'):
       """
       create the filename given an optional extra suffix that is used before the tag
       """
@@ -80,17 +67,19 @@ class output(object):
       if self.tag:
         self.filename += '_'+self.tag
 
-      self.filename += '.dat'
+      self.filename += ext
 
-    def init(self):
+    def openfile(self, subdir=None):
       """open the file object"""
       if self.file == None or self.file.closed:
         if self.verbose:
           print 'opening file %s' % self.filename
-        self.file = open(op.join(self.directory, self.filename), 'w')
+        if subdir:
+          self.file = open(op.join(self.directory, subdir, self.filename), 'w')
+        else:
+          self.file = open(op.join(self.directory, self.filename), 'w')
       else:
-        if self.verbose:
-          print 'File already openned !! Close it first.'
+        print 'File already openned !! Close it first.'
 
     def close(self):
       """close the file object"""
@@ -119,63 +108,148 @@ class output(object):
       """output must have a save method to write the date into the file"""
       raise NotImplementeError()
 
+class counts(output):
+  """
+  Record the counting of multiple variables evolving during tree development
+  """
+
+  def __init__(self, directory='', init_date=datetime.datetime(1994,1,1), filename="counts", frequency=365., verbose=False, tag=None):
+    output.__init__(self, directory=directory, init_date=init_date, filename=filename, verbose=verbose, tag=tag)
+
+    self.metamers     = 0 # number of metamers
+    self.gus          = 0 # number of growing units
+    self.leaves       = 0 # number o leaves
+    self.tla          = 0 # Total Leaf Area
+    self.fruits       = 0 # number of fruits
+    self.fruitdw      = 0 # Total fruit Dry Weight
+
+  def openfile(self, subdir=None):
+    output.openfile(self, subdir)
+    self.file.write('Date, SimuDay, Metamers, GUs, Leaves, TLA, Fruits, Fruit DW\n')
+
+  def update(self, metamer):
+    self.metamers += 1
+  
+    #updating fruit data
+    if metamer.fruit.state == 'fruit':
+      self.fruits += 1
+      self.fruitdw += metamer.fruit.mass
+
+    #updating leaf data
+    if metamer.leaf.state == 'growing':
+      self.leaves += 1
+      self.tla += metamer.leaf.area
+
+  def reset(self):
+    self.metamers     = 0 # number of metamers
+    self.gus          = 0 # number of growing units
+    self.leaves       = 0 # number of leaves
+    self.tla          = 0 # Total Leaf Area
+    self.fruits       = 0 # number of fruits
+    self.fruitdw      = 0 # Total fruit Dry Weight
+
+  def save(self, date):
+    if self.file is None:
+      raise IOError("File is not openned. Use openfile() method.")
+     
+    self.file.write("{date}, {days}, {metamers}, {gus}, {leaves}, {tla}, {fruits}, {fruitdw}\n".format(date=date, days=(date-self.init_date).days, metamers=self.metamers, gus=self.gus, leaves=self.leaves, tla=self.tla, fruits=self.fruits, fruitdw=self.fruitdw))
+
+  def __str__(self):
+    res = "%20s=%10f\t%20s=%10f\n%20s=%10f\t%20s=%10f\n%20s=%10f\t%20s=%10f\n" \
+        % ("Metamers: ", self.metamers, "GUs: ", self.gus, "Leaves: ", self.leaves,
+            "TLA: ", self.tla, "Fruits: ",self.fruits, "Fruits DW: ",self.fruitdw)
+    return res
+
+
+
+class shoots(output):
+  """
+  Record the shoot demography per length type
+  """
+
+  def __init__(self, directory='', init_date=datetime.datetime(1994,1,1), filename="shoots", frequency=4., verbose=False, tag=None):
+    output.__init__(self, directory=directory, init_date=init_date, filename=filename, verbose=verbose, tag=tag)
+
+    #self.file.write('#shorts\tlongs\tflorals\t0\tmediums\tlen_16_to_25\tlen_26_to_40\tlen_over_40\tfruits\n')
+
+    self.shorts       = 0
+    self.mediums      = 0
+    self.longs        = 0
+    self.florals      = 0
+    self.len_16_to_25 = 0
+    self.len_26_to_40 = 0
+    self.len_over_40  = 0
+
+  def openfile(self, subdir=None):
+    output.openfile(self, subdir)
+    self.file.write('Date, Florals, Shorts, Mediums, All_Longs, Longs_16_to_25, Longs_26_to_40, Longs_over_40\n')
+
+
+  def reset(self):
+    self.shorts       = 0
+    self.mediums      = 0
+    self.longs        = 0
+    self.florals      = 0
+    self.len_16_to_25 = 0
+    self.len_26_to_40 = 0
+    self.len_over_40  = 0
+
+  def __str__(self):
+    res = "%20s=%10f\n%20s=%10f\n%20s=%10f\n%20s=%10f\n%20s=%10f\n%20s=%10f\n%20s=%10f" \
+        % ("shorts", self.shorts,"mediums", self.mediums, "longs", self.longs,
+            "florals", self.florals, "len_16_to_25",self.len_16_to_25,
+            "leng_25_to_40",self.len_26_to_40, "len_over_40",self.len_over_40)
+    return res
+
+  def save(self, date):
+    if self.file is None:
+      raise IOError("File is not openned. Use openfile() method.")
+     
+    self.file.write("{date}, {florals}, {shorts}, {mediums}, {longs}, {longshort}, {longmedium}, {longlong}\n".format(date=date, florals=self.florals, shorts=self.shorts, mediums=self.mediums, longs=self.longs, longshort=self.len_16_to_25, longmedium=self.len_26_to_40, longlong=self.len_over_40))
+
+
+class sequences(output):
+  """
+  Store each generated sequence during the simulation
+  """
+  def __init__(self, directory='', init_date=datetime.datetime(1994,1,1), filename="sequences", frequency=5., verbose=False, tag=None, ext='.seq'):
+    output.__init__(self, directory=directory, init_date=init_date, filename=filename, verbose=verbose, tag=tag)
+
+  def openfile(self, subdir=None):
+    output.openfile(self, subdir)
+    self.file.write("#save sequences of each apex\n\n1 VARIABLE\n\nVARIABLE 1 : VALUE\n\n")
+  
+  def save(self, sequence, position):
+    for i in range(position - 1,  -1, -1): #up to -1 (c notation so really it's up to 0)
+      if i==0:
+        self.file.write("%s\n" % sequence[i][1])
+      else:
+        self.file.write("%s " % sequence[i][1])
+
 
 class trunk(output):
-    """Defines the output filename to store trunk information"""
+  """
+  Defines the output filename to store trunk information
+  """
 
-    def __init__(self, directory='', filename="trunk", frequency=365., verbose=False, tag=None):
-        output.__init__(self, directory=directory, filename=filename, verbose=verbose, tag=tag)
+  def __init__(self, directory='', init_date=datetime.datetime(1994,1,1), filename="trunk", frequency=365., verbose=False, tag=None):
+    output.__init__(self, directory=directory, init_date=init_date, filename=filename, verbose=verbose, tag=tag)
 
-    def save(self, date, trunk_radius, trunk_cross_sectional_area):
-        self.file.write("%s\t%d\t%s\t%s\n" % (date, self.elapsed.days,trunk_radius,trunk_cross_sectional_area))
+  def openfile(self, subdir=None):
+    output.openfile(self, subdir)
+    self.file.write('Date, SimuDay, Trunk radius, Trunk cross sectional area\n')
 
-class counts(output):
-    """Store the count of shoots (long, small, ...)"""
-
-    def __init__(self, directory='', filename="counts", frequency=4., verbose=False, tag=None):
-        output.__init__(self, directory=directory, filename=filename, verbose=verbose, tag=tag)
-
-        self.shorts       = 0
-        self.mediums      = 0
-        self.longs        = 0
-        self.florals      = 0
-        self.len_16_to_25 = 0
-        self.len_26_to_40 = 0
-        self.len_over_40  = 0
-
-    def reset(self):
-        self.shorts       = 0
-        self.mediums      = 0
-        self.longs        = 0
-        self.florals      = 0
-        self.len_16_to_25 = 0
-        self.len_26_to_40 = 0
-        self.len_over_40  = 0
-
-    def __str__(self):
-
-        res = "%20s=%10f\n%20s=%10f\n%20s=%10f\n%20s=%10f\n%20s=%10f\n%20s=%10f\n%20s=%10f" \
-            % ("shorts", self.shorts,"mediums", self.mediums, "longs", self.longs,
-                "florals", self.florals, "len_16_to_25",self.len_16_to_25,
-                "leng_25_to_40",self.len_26_to_40, "len_over_40",self.len_over_40)
-        return res
-
-    def save(self, date=None):
-        if self.file is None:
-            raise IOError("File is not openned. Use init() method.")
-
-        if date:
-            self.file.write("%s\t %s\t %s\t %s\t 0\t %s\t %s\t %s\t %s\n" % (date, self.shorts, self.longs, self.florals, self.mediums, self.len_16_to_25, self.len_26_to_40, self.len_over_40))
-        else:
-            self.file.write("%s\t %s\t %s\t 0\t %s\t %s\t %s\t %s\n" % (self.shorts, self.longs, self.florals, self.mediums, self.len_16_to_25, self.len_26_to_40, self.len_over_40))
+  def save(self, date, trunk_radius, trunk_cross_sectional_area):
+    self.file.write("{date}, {days}, {radius}, {section_area}\n".format(date=date, days=(date-self.init_date).days, radius=trunk_radius, section_area=trunk_cross_sectional_area))
 
 
 class l_string(output):
     """Defines the output filename to store lstring information"""
 
-    def __init__(self, directory='', filename="l-string", frequency=5., verbose=False, tag=None):
-        output.__init__(self, directory=directory, filename=filename, verbose=verbose, frequency=frequency, tag=tag)
-        self.filename = filename
+    def __init__(self, directory='', init_date=datetime.datetime(1994,1,1), filename="l-string", frequency=5., verbose=False, tag=None):
+      output.__init__(self, directory=directory, init_date=init_date, filename=filename, verbose=verbose, tag=tag)
+      self.filename = filename
+
     #Added by Han on 12-12-2011
     def build_filename(self, extra=""):
         self.filename = extra + ".dat"
@@ -213,38 +287,6 @@ class l_string(output):
                 self.file.write("]")
         self.file.write('\n')
         self.file.flush()
-
-"""
-class light_interception(output):
-    #Defines the output filename to store light interception information
-
-    def __init__(self,  filename="light-interception", frequency=5., verbose=False, tag=None):
-        output.__init__(self, filename=filename, verbose=verbose, frequency=frequency, tag=tag)
-
-    def save(self, lstring, date):
-        self.file.write("%s\tR" % date)
-
-        for i, elt in enumerate(lstring):
-            if elt[0].leaf.state != 'scar':
-                        self.file.write("%s\n" % elt[0].leaf.lg)
-        self.file.write('\n')
-        self.file.flush()
-"""
-
-class sequences(output):
-    """
-
-    """
-    def __init__(self, directory='', filename="sequences", frequency=5., verbose=False, tag=None):
-        output.__init__(self, directory=directory, filename=filename, verbose=verbose, frequency=frequency, tag=tag)
-
-    def save(self, sequence, position):
-       for i in range(position - 1,  -1, -1): #up to -1 (c notation so really it's up to 0)
-            if i==0:
-                self.file.write("%s\n" % sequence[i][1])
-            else:
-                self.file.write("%s " % sequence[i][1])
-
 
 header = """# MTG generated by MAppleT 2
 #
@@ -313,16 +355,16 @@ TOPO\t\t\t\t\t\t\t\t\t\t\tTopDia\tXX\tYY\tZZ\tyear\tobservation\tlength\tleaf_st
 class mtg(output):
     """a simple MTG classes to save output in MTG format."""
 
-    def __init__(self, directory='', filename="", frequency=2., verbose=False, tag=None):
-      output.__init__(self, directory=directory, filename=filename, verbose=verbose, frequency=frequency, tag=tag)
+    def __init__(self, directory='', init_date=datetime.datetime(1994,1,1), filename="", frequency=2., verbose=False, tag=None):
+      output.__init__(self, directory=directory, init_date=init_date, filename=filename, verbose=verbose, tag=tag)
       self.columns        = 10;
       self.current_column =  0;
       self.header = header
       self.filename = filename
 
     #Added by Han on 12-12-2011
-    def build_filename(self, extra=""):
-        self.filename = extra + ".mtg"
+    #def build_filename(self, extra=""):
+    #    self.filename = extra + ".mtg"
 
     def write_leading_tabs(self):
         for i in range(0, self.current_column):
@@ -424,8 +466,8 @@ class mtg(output):
 class Data(object):
     """a data class to manage output data given by stocatree.
 
-    an instance of this class allows to father several output structure such as
-    :class:`mtg` and :class:`counts` and to keep track of stocatree revision and
+    an instance of this class allows to gather several output structure such as
+    :class:`mtg` and :class:`shoots` and to keep track of stocatree revision and
     options, which is needed to reproduce results.
 
 
@@ -434,31 +476,72 @@ class Data(object):
     >>> from openalea.stocatree.output import Data
     >>> options = ConfigParams(get_shared_data('stocatree.ini'))
     >>> data = Data(options=options, revision=None)
-    >>> data.counts.init()
+    >>> data.shoots.openfile()
     >>> data.shorts = 10
-    >>> data.counts.save('1995-10-10')
+    >>> data.shoots.save('1995-10-10')
     >>> data.close_all()
 
     """
-    def __init__(self, options, revision=None, dir="./"):
+    def __init__(self, options, init_date, revision=None, dir="./"):
       self.options = options                        #The options as defined in the .ini file and opend with ConfigParams
+      self.init_date = init_date                    #The starting date of recording outputs
       self.revision = revision                      #A number manually generated ?
       self.lstring = None                           #The lstring from lpy ?
       self.verbose = options.general.verbose        #Bool defined in the options, i.e. .ini file
       self.dir = dir# This is to store the results under a designated directory rather than
 
       #These are output objects added to the Data class, it may be more interesting to be able to add them
-      #dynamically. Will require modifications in init and close_all
-      self.l_string =l_string(directory=self.dir, tag=options.general.tag, verbose=self.verbose)
-      self.counts = counts(directory=self.dir, tag=options.general.tag, verbose=self.verbose)
-      self.trunk = trunk(directory=self.dir, tag=options.general.tag, verbose=self.verbose)
-      self.sequences = sequences(directory=self.dir, tag=options.general.tag, verbose=self.verbose)
-      self.mtg = mtg(directory=self.dir, tag=options.general.tag, verbose=self.verbose)
+      #dynamically. Will require modifications in openfile and close_all
+
+      if self.options.output.shoots:
+        self.shoots = shoots(directory=self.dir, init_date=self.init_date, tag=options.general.tag, verbose=self.verbose)
+
+      if self.options.output.sequences:
+        self.sequences = sequences(directory=self.dir, init_date=self.init_date, tag=options.general.tag, verbose=self.verbose)
+
+      if self.options.output.mtg :
+        self.mtg = mtg(directory=self.dir, init_date=self.init_date, tag=options.general.tag, verbose=self.verbose)
+
+      if self.options.output.trunk:
+        self.trunk = trunk(directory=self.dir, init_date=self.init_date, tag=options.general.tag, verbose=self.verbose)
+
+      if self.options.output.counts:
+        self.counts = counts(directory=self.dir, init_date=self.init_date, tag=options.general.tag, verbose=self.verbose)
+      #self.l_string =l_string(directory=self.dir, tag=options.general.tag, verbose=self.verbose)
       #self.light_interception=light_interception(tag=options.general.tag, verbose=self.verbose)
       
       self.time = []
       self.nfruits = []
       self.mass_fruits = []
+
+    def init(self):
+      """
+      init all the attributes of type :class:`~openalea.stocatree.output.output`
+      that is `trunk`, `shoots`, `sequences`, `mtg`.
+      """
+
+      # init the shoots output
+      if self.options.output.shoots:
+        self.shoots.openfile()
+
+      #init the sequence
+      if self.options.output.sequences:
+        self.sequences.openfile()
+
+      # init trunk output
+      if self.options.output.trunk:
+        self.trunk.openfile()
+
+      # init counts output
+      if self.options.output.counts:
+        self.counts.openfile()
+
+      # init the l_srting output
+      #Filtered by Han on 12-12-2011
+      #if self.options.output.l_string:
+      #    self.l_string.openfile()
+
+
 
 
     def save(self):
@@ -473,44 +556,21 @@ class Data(object):
         file.close()
 
     def close_all(self):
-        """close all the attributes of type :class:`~openalea.stocatree.output.output`
-        that is `trunk`, `counts`, `sequences`, `mtg` and `l_string`.
-        """
-        self.trunk.close()
-        self.counts.close()
+      """
+      Close all the attributes of type :class:`~openalea.stocatree.output.output`
+      that is `shoots`, `sequences`, `mtg`.
+      """
+      if self.options.output.shoots:
+        self.shoots.close()
+      if self.options.output.sequences:
         self.sequences.close()
+      if self.options.output.trunk:
+        self.trunk.close()
+      if self.options.output.counts:
+        self.counts.close()
+
+      if self.options.output.mtg :
         self.mtg.close()
-        self.l_string.close()
+        #self.trunk.close()
         #self.light_interception.close()
-
-    def init(self):
-        """init all the attributes of type :class:`~openalea.stocatree.output.output`
-        that is `trunk`, `counts`, `sequences`, `mtg` and `l_string` and write header
-        when required.
-        """
-        #init the sequence
-        if self.options.output.sequences:
-            self.sequences.init()
-            self.sequences.file.write("#save sequences of each apex\n\n1 VARIABLE\n\nVARIABLE 1 : VALUE\n\n")
-
-        # init the l_srting output
-        #Filtered by Han on 12-12-2011
-        #if self.options.output.l_string:
-        #    self.l_string.init()
-
-        """
-        # init the light_interception output
-        if self.options.output.light_interception:
-            self.light_interception.init()
-        """
-
-        # init trunk output
-        if self.options.output.trunk:
-            self.trunk.init()
-
-        # init the shoot counts output
-        if self.options.output.counts:
-            self.counts.init()
-            self.counts.file.write('#shorts\tlongs\tflorals\t0\tmediums\tlen_16_to_25\tlen_26_to_40\tlen_over_40\tfruits\n')
-
 

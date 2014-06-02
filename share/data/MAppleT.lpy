@@ -1,4 +1,5 @@
-__revision__ = " $Id: stocatree.lpy 11526 2011-12-06 14:48:34Z liqihan $ "
+#__revision__ = " $Id: stocatree.lpy 11526 2011-12-06 14:48:34Z liqihan $ "
+__revision__ = " $ Id: MAppleT.lpy 2014 DDS $ "
 
 # First, read the configuration file
 from openalea.plantik.tools.config import ConfigParams
@@ -76,13 +77,6 @@ debug = options.general.debug
 output_directory = options.general.output_dir
 ensureLocalDir(output_directory)
 
-if verbose:
-  print "The outputs will be saved in: ",output_directory
-
-# Then, define a data structure to store outputs such as MTG, counts, sequences and so on
-# This will be provided in case of a continued simulation
-data = Data(options=options, revision=__revision__)
-
 # Initialise the simulation
 # This will be provided in case of a continued simulation
 simulation = SimulationStocatree(dt=options.general.time_step,
@@ -93,7 +87,19 @@ simulation = SimulationStocatree(dt=options.general.time_step,
 #date = datetime.datetime.strptime(date, "%Y-%m-%d")
 #simulation.events.add_event('star', datetime.datetime.strptime(options.output.light_date, "%Y-%m-%d"), duration=datetime.timedelta(0), periodic=False)
 simulation.events.add_event('star', datetime.datetime.strptime(options.output.light_date, "%Y-%m-%d"), duration=datetime.timedelta(0), periodic=options.output.light_yearly)
-simulation.events.add_event('qualitree_export', datetime.datetime.strptime(options.qualitree.date, "%Y-%m-%d"), duration=datetime.timedelta(0), periodic=options.qualitree.yearly)
+
+if options.qualitree.export:
+  simulation.events.add_event('qualitree_export', datetime.datetime.strptime(options.qualitree.date, "%Y-%m-%d"), duration=datetime.timedelta(0), periodic=options.qualitree.yearly)
+else:
+  simulation.events.add_event('qualitree_export', datetime.datetime(1,1,1), duration=datetime.timedelta(0), periodic=options.qualitree.yearly)
+
+if verbose:
+  print "The outputs will be saved in: ",output_directory
+
+# Then, define a data structure to store outputs such as MTG, shoots, sequences and so on
+# This will be provided in case of a continued simulation
+data = Data(options=options, init_date=simulation.date, dir=output_directory, revision=__revision__)
+
 
 
 # Read PGLshape surfaces
@@ -245,8 +251,6 @@ def Start():
     can_y_min=0
 
 def StartEach():
-    #Added by Han on 06-12-2011
-    #to allow the scene can be directly saved in EndEach()
 
     #if simulation.phase == update_structure and ( (simulation.date.day % options.stocatree.dt_biomeca == 0 and numerical_resolution_counter == 1) or numerical_resolution_counter == 0):
     if( (simulation.phase == update_structure and numerical_resolution_counter == 0) or simulation.phase == pruning_fw or simulation.phase == pruning_bw):
@@ -254,10 +258,9 @@ def StartEach():
     else:
       frameDisplay(False)
     #frameDisplay(False)
-
-    #Added by Han on 23-05-2011
-    # to prevent one processor from using wrong information that should belong to another processor
-
+    
+    if simulation.phase == update_parameters:
+      data.counts.reset()
 
     if simulation.date.year in [1994,1995]:
         markov.hsm_medium = markov.hsm_96_medium
@@ -522,7 +525,7 @@ def EndEach(lstring,scene):
           #             Export required data to be used in  QualiTree               #
           #-------------------------------------------------------------------------#
 
-          if numerical_resolution_counter == 0 and options.qualitree.export and simulation.events.qualitree_export.active:
+          if numerical_resolution_counter == 0 and simulation.events.qualitree_export.active:
             sub_dir = op.join(output_directory, "{0}_{1}".format(simulation.date.year, simulation.date.month ), options.qualitree.prefix )
             #MTG is required so generating one for that specific purpose
             ensureLocalDir(sub_dir)
@@ -538,7 +541,35 @@ def EndEach(lstring,scene):
             export2qualitree(save_pth = sub_dir, mtg_file_path = data.mtg.filename, leaf_scene = lvs, nom_arbre = "MAppleT_"+current_experiment, date = options.qualitree.date, variete = options.qualitree.variety , SLA = options.qualitree.sla, densite_MS_rameaux = options.qualitree.specific_weight, TMS_fruits = options.qualitree.fruit_dwc, SR = options.qualitree.shoot_root_ratio, userEllipse=True)
             
 
+          #-------------------------------------------------------------------------#
+          #                     Saving to be done every day                         #
+          #-------------------------------------------------------------------------#
+    
+          if numerical_resolution_counter == 0 :
+            # Trunk data 
+            if options.output.trunk:
+              data.trunk.save(simulation.date, tree.trunk_radius,tree.trunk_cross_sectional_area)
 
+            # Counts data
+            if options.output.counts:
+              data.counts.save(simulation.date)
+
+
+          #-------------------------------------------------------------------------#
+          #                 Saving to be done at the end of the year                #
+          #-------------------------------------------------------------------------#
+
+          if numerical_resolution_counter == 0 and simulation.date.month == 12 and simulation.date.day == 31:
+ 
+            # save the count of shoots per length type
+            if options.output.shoots :
+              #print data.shoots
+              data.shoots.save(simulation.date)
+              data.shoots.reset()
+
+
+          #-------------------------------------------------------------------------#
+          #                 Saving to be done on specific date                      #
           #-------------------------------------------------------------------------#
 
 
@@ -549,10 +580,6 @@ def EndEach(lstring,scene):
 
             sub_dir = op.join(output_directory, "{0}_{1}".format(simulation.date.year, simulation.date.month ) )
 
-            # Trunk data ?
-            if options.output.trunk:
-                data.trunk.save(simulation.date, tree.trunk_radius,tree.trunk_cross_sectional_area)
-
             #Output of MTG
             if options.output.mtg :
               ensureLocalDir(sub_dir)
@@ -561,15 +588,6 @@ def EndEach(lstring,scene):
               if verbose:
                 print "Saving MTG as: ", data.mtg.filename
               data.mtg.save(lstring, simulation.date, tree.trunk_radius)
-
-            # save the counts of ?
-            if options.output.counts :
-              ensureLocalDir(sub_dir)
-              save = data.counts.advance(simulation.dt)
-              if save:
-                  data.counts.save(simulation.date)
-              if simulation.date.day == 0:
-                  data.counts.reset()
 
             # snapshot of the scene
             if options.output.saveimage :
@@ -724,6 +742,7 @@ metamer(ml) branch() << metamer(m) :
     #  hlu_init = rotate_frame_at_branch(ml.hlu, ml.branching_angle,  ml.phyllotactic_angle);
     #  m.hlu = optimisation.reorient_frame(hlu_init, m.rotation_velocity, m.length)
     m.update_position(ml.position)
+    data.counts.update(m)
     produce metamer(m)
 
 metamer(ml) << metamer(m):
@@ -736,12 +755,14 @@ metamer(ml) << metamer(m):
         #m.hlu = nonopti.reorient_frame(ml.hlu, m.rotation_velocity, m.rv_norm, m.length)
 
     m.update_position(ml.position)
+    data.counts.update(m)
     produce metamer(m)
 
 metamer(m):
     m.update_metamer_parameters(simulation)
     m.organ_activity(simulation)
     m.update_position()
+    data.counts.update(m)
     produce metamer(m)
 
 
@@ -867,29 +888,27 @@ apex(a):
       if debug:
         print "This is shoot {0} of length {1}".format(a.parent_unit_id, a.sequence_position)
 
-      #update counts
-      if options.output.counts:
+      #update shoots
+      if options.output.shoots:
           if a.parent_observation=='floral':
-              data.counts.florals+=1
+              data.shoots.florals+=1
           elif a.parent_observation == 'small':
-              data.counts.shorts+=1
+              data.shoots.shorts+=1
           elif a.parent_observation == 'medium':
-              data.counts.mediums+=1
+              data.shoots.mediums+=1
           elif a.parent_observation == 'large':
-              data.counts.longs += 1
+              data.shoots.longs += 1
               if (a.sequence_position < 26):
-                  data.counts.len_16_to_25 +=1
+                  data.shoots.len_16_to_25 +=1
               elif (a.sequence_position < 41):
-                  data.counts.len_26_to_40+=1
+                  data.shoots.len_26_to_40+=1
               else:
-                  data.counts.len_over_40+=1
+                  data.shoots.len_over_40+=1
 
 
-      # save sequences into output data
-      #if (options.output.sequences and simulation.date.year < 1999 and (a.parent_observation in ['large','medium','small'])):
-      #    data.sequences.save(a.sequence, a.sequence_position)
+      # save sequences into output data except for florals and trunk
       if (options.output.sequences and simulation.date.year < 1999 and (a.parent_observation in ['large', 'medium', 'small'])):
-          data.sequences.save(a.sequence, a.sequence_position)
+        data.sequences.save(a.sequence, a.sequence_position)
 
       #Added by Han on 29-05-2012
       #Note that a.year was initially smaller than simulation.date.year
