@@ -743,6 +743,7 @@ metamer(ml) branch() << metamer(m) :
     #  m.hlu = optimisation.reorient_frame(hlu_init, m.rotation_velocity, m.length)
     m.update_position(ml.position)
     data.counts.update(m)
+    m.offset = 0.9 * ml.radius
     produce metamer(m)
 
 metamer(ml) << metamer(m):
@@ -781,6 +782,10 @@ root() >> metamer(m):
 metamer(m) >> SB() branch() metamer(mb) EB() metamer(mr):
     # update radius
     radius = optimisation.get_new_radius(mb.radius, mr.radius)
+    # update distance from apex
+    m.closest_apex = min(mb.closest_apex, mr.closest_apex) + 1
+    m.farthest_apex = max(mb.farthest_apex, mr.farthest_apex) + 1
+
     if m.leaf.state=='growing':
         radius = optimisation.get_new_radius(radius, m.leaf.petiole_radius)
     m.radius = optimisation.max(radius, m.radius) #why redefinition in optimisation of already existing max function ?
@@ -801,8 +806,12 @@ metamer(m) >> SB() branch() metamer(mb) EB() metamer(mr):
     produce metamer(m)
 
 metamer(m) >> metamer(mr):
-
+    # update radius
     radius = mr.radius
+    # update distance from apex
+    m.closest_apex = mr.closest_apex + 1
+    m.farthest_apex = mr.farthest_apex + 1
+
     if m.leaf.state == 'growing':
         radius = optimisation.get_new_radius(mr.radius, m.leaf.petiole_radius)
     m.radius = optimisation.max(radius, m.radius)
@@ -818,7 +827,12 @@ metamer(m) >> metamer(mr):
 
 metamer(m) >> apex(a):
     # wood.density, m.fruit_mass  aer units objects
+    # update radius
     radius = a.radius
+    # update distance from apex
+    m.closest_apex = 0
+    m.farthest_apex = 0
+
     if m.leaf.state=='growing':
         radius = optimisation.get_new_radius(a.radius, m.leaf.petiole_radius)
     m.radius = optimisation.max(radius, m.radius);
@@ -863,9 +877,13 @@ apex(a):
           a.parent_observation = 'large'
           a.set_observation('large')
 
-      a.sequence  = generate_sequence(a.get_observation(),\
-          markov, simulation.date.year, options.stocatree.second_year_draws,
-          select_trunk=[int(options.stocatree.select_trunk)])
+      if a.from_pruning:
+        print "####################### PRUNED APEX #############################"
+        a.sequence  = generate_pruned_sequence(obs=a.get_observation(), rank=a.rank, closest_apex=a.closest_apex, farthest_apex=a.farthest_apex, markov=markov, year=simulation.date.year )
+      else:
+        a.sequence  = generate_sequence(a.get_observation(),\
+            markov, simulation.date.year, options.stocatree.second_year_draws,
+            select_trunk=[int(options.stocatree.select_trunk)])
       
       a.sequence_position = len(a.sequence)
       if (a.get_observation()=='trunk'):
@@ -1096,7 +1114,8 @@ metamer(m):
 #===============================================================#
 group 5:
 
-metamer(m) > X:
+#X < metamer(m) :
+metamer(m) > X :
   if not m.cut and not m.to_prune:
     m.cut = True
     m.to_prune = True
@@ -1108,22 +1127,47 @@ metamer(m) > X:
     #produce Cut()
     m.cut = False
     m.to_prune = False
-    m.branching_angle = tree.floral_branching_angle
-    hlu = rotate_frame_at_branch(m.hlu, m.branching_angle, m.phyllotactic_angle);
+    #m.branching_angle = tree.floral_branching_angle
 
-    pruning_apex = apex_data(hlu, m.parent_observation, **apex_parameters)
+    # There will be prunig reaction only if cut is after rank 5, otherwise pruning is ment not to have reaction
+    if m.number > 4:
 
-    if m.parent_fbr_id == 0:
-      tree.first_branches +=1
-      #The parent_fbr_id ranges from 0 to tree.first_branches (rather than to tree.frist-branches-1)
-      #This is because, the trunk is regarded by branch 0 as default
-      #Thus the id of the first real branch should be 1
-      pruning_apex.parent_fbr_id = tree.first_branches
+      new_br_angle, new_phyllo_angle = m.pruning_reaction_angle(tree.phyllotactic_angle)
+      m.branching_angle = new_br_angle
+      m.phyllotactic_angle = new_phyllo_angle
+
+
+      hlu = rotate_frame_at_branch(m.hlu, m.branching_angle, m.phyllotactic_angle);
+
+
+      if debug:
+        print("Cutting a branch of type {0} at rank {1} and at {2} from closest apex and {3} from farthest apex".format(m.parent_observation, m.number, m.closest_apex, m.farthest_apex))
+        print("New branching angle={0} and new phyllotactic angle={1}".format(new_br_angle, new_phyllo_angle))
+
+      pruning_apex = apex_data(hlu, m.parent_observation, **apex_parameters)
+      pruning_apex.from_pruning = True
+      pruning_apex.rank = m.number
+      pruning_apex.closest_apex = m.closest_apex
+      pruning_apex.farthest_apex = m.farthest_apex
+
+      if m.parent_fbr_id == 0:
+        tree.first_branches +=1
+        #The parent_fbr_id ranges from 0 to tree.first_branches (rather than to tree.frist-branches-1)
+        #This is because, the trunk is regarded by branch 0 as default
+        #Thus the id of the first real branch should be 1
+        pruning_apex.parent_fbr_id = tree.first_branches
+      else:
+        pruning_apex.parent_fbr_id = m.parent_fbr_id
+
+      if debug:
+        agl = math.degrees(math.acos(pgl.dot(m.hlu.heading.normed(), pgl.Vector3(0,0,1))))
+        agl2 = math.degrees(math.acos(pgl.dot(pruning_apex.hlu.heading.normed(), pgl.Vector3(0,0,1))))
+        print "Producing pruning apex with heading {0} at {3} deg from vertical \n Origin metamer having heading {1}, at {2} deg from vertical".format(pruning_apex.hlu.heading, m.hlu.heading, agl, agl2)
+
+      produce metamer(m) SB() branch() apex(pruning_apex) EB() Cut()
+      #produce SB() branch() apex(pruning_apex) EB() Cut()
     else:
-      pruning_apex.parent_fbr_id = m.parent_fbr_id
-    if verbose:
-      print "Producing pruning apex with syll {0} and angle {1}".format(pruning_apex.sylleptic, m.branching_angle)
-    produce metamer(m) SB() branch() apex(pruning_apex) EB() Cut()
+      produce Cut()
 
 metamer(ml) SB() branch() << metamer(m):
   if not ml.to_prune and not m.cut:
@@ -1200,7 +1244,6 @@ interpretation:
 
 root():
     dateLabel = str(simulation.date.year) + '-' + str(simulation.date.month) + '-' + str(simulation.date.day)
-
     #Cylinder replaces the ground shape, size is ground radius that gives 
     #an estimate of the extension of the canopy projection on the ground
     # *5.0  = *10/2. [unit conversion / diameter2radius] 
@@ -1211,7 +1254,31 @@ root():
       #produce SB() SetColor(colors.ground) PglShape(ground_surface, 10.0) EB();
     else:
       #produce SB() f(-3) SetColor(colors.background) Label(dateLabel) f(3) SetColor(colors.ground) PglShape(pgl.Cylinder(5,0.5,True,50)) EB();
-      produce SB() SetColor(colors.background) @g(pgl.Text(dateLabel,(5,5,0.9), True)) SetColor(colors.ground) PglShape(pgl.Cylinder(ground_radius,0.5,True,50)) EB();
+
+      #Displaying counts values
+      if options.output.counts:
+        elmt = data.counts.display()
+        for i,e in enumerate(elmt):
+          countslabel = "{elmt:<15s} : {value:>5.3e}".format(elmt=e, value=data.counts.__dict__[e])
+          nproduce SB()SetColor(colors.background) @g(pgl.Text(countslabel,(3,90-3*i,0.9), True)) EB();
+
+      #Displaying trunk values
+      if options.output.trunk:
+        elmt = data.trunk.display()
+        for i,e in enumerate(elmt):
+          countslabel = "{elmt:<15s} : {value:>5.3e}".format(elmt=e, value=data.trunk.__dict__[e])
+          nproduce SB()SetColor(colors.background) @g(pgl.Text(countslabel,(3,70-3*i,0.9), True)) EB();
+
+
+      #Displaying shoots counting
+      if options.output.shoots:
+        elmt = data.shoots.display()
+        for i,e in enumerate(elmt):
+          countslabel = "{elmt:<10s} : {value:>3n}".format(elmt=e, value=data.shoots.__dict__[e])
+          nproduce SB()SetColor(colors.background) @g(pgl.Text(countslabel,(85,90-3*i,0.9), True)) EB();
+
+
+      produce SB() SetColor(colors.background) @g(pgl.Text(dateLabel,(3,5,0.9), True)) SetColor(colors.ground) PglShape(pgl.Cylinder(ground_radius,0.5,True,50)) EB();
       #produce SB() f(-3) SetColor(colors.background) Label(dateLabel) f(3) SetColor(colors.ground) PglShape(ground_surface, 10.0) EB();
 
     
@@ -1250,7 +1317,7 @@ metamer(m):
     nproduce SetHead(m.hlu.heading.x, m.hlu.heading.y, m.hlu.heading.z, m.hlu.up.x, m.hlu.up.y, m.hlu.up.z)
     #nproduce SetWidth(m.radius*12.) SetColor(shoot_colour) F(m.length*10)
     #Modified by Han on 06-03-2012
-    nproduce SetWidth(m.radius*10) SetColor(shoot_colour) F(m.length*10)
+    nproduce SetWidth(m.radius*10) SetColor(shoot_colour) f(m.offset*10) F(m.length*10)
     d2r = 180.0 / constants.pi
 
     if (m.fruit.state == 'flower'):

@@ -549,6 +549,58 @@ def generate_sequence(obs, markov=None, year=1994, second_year_draws=False,
     else:
         raise("ERROR: A bad sequence observation (%s) was passed to generate_sequence().\n" % obs)
 
+def generate_pruned_sequence(obs, rank, closest_apex, farthest_apex, markov=None, year=1994 ):
+    #The pruned length is assimilated to the distance to the farthest apex
+
+    #Case of pruning a shoot w/o branching
+    #Type of shoot is generated according to the pruned length
+    if closest_apex == farthest_apex:
+      if obs == 'trunk' or obs == 'large' or obs == 'sylleptic_large':
+        #In case of pruned trunk, a large shoot will be generated
+        if farthest_apex > 35:
+          return generate_bounded_hsm_sequence(markov.hsm_long, 41, markov.maximum_length)
+        elif farthest_apex > 25:
+          return generate_bounded_hsm_sequence(markov.hsm_long, 26, 41)
+        elif farthest_apex > 10:
+          return generate_bounded_hsm_sequence(markov.hsm_long, 15, 26)
+        else:
+          return generate_bounded_hsm_sequence(markov.hsm_medium,  5, 15);
+      elif obs == 'medium'or obs == 'sylleptic_medium':
+        if farthest_apex > 5:
+          return generate_bounded_hsm_sequence(markov.hsm_medium,  5, 15);
+        else:
+          return generate_short_sequence()
+      elif obs == 'small' or obs == 'sylleptic_short':
+        return generate_short_sequence()
+      elif obs == 'floral':
+        return generate_floral_sequence()
+
+    #Case of pruning a shoot with branching
+    #Then depending on the pruned length, shoot type may be upgraded
+    #or vigor increased by using previous year of HSMC
+    else:
+      
+        return generate_trunk(select=select_trunk)
+    elif obs == 'small' or obs == 'sylleptic_short':
+        return generate_short_sequence()
+    elif obs == 'floral':
+        return generate_floral_sequence()
+    elif obs == 'medium' or obs == 'sylleptic_medium':
+        return generate_bounded_hsm_sequence(markov.hsm_medium,  5, 15);
+    elif obs == 'large' or obs == 'sylleptic_large':
+        if (second_year_draws and year== 1995):
+            return _generate_random_draw_sequence()
+        else:
+            res = length_pool(year)
+            assert res in [1, 2, 3], 'Error Bad Length pool category'
+            if res == 1:
+                return generate_bounded_hsm_sequence(markov.hsm_long, 15, 26)
+            elif res == 2:
+                return generate_bounded_hsm_sequence(markov.hsm_long, 26, 41)
+            elif res == 3:
+                return generate_bounded_hsm_sequence(markov.hsm_long, 41, markov.maximum_length)
+ 
+    #if the trunk was cut far enough from the top, generate the longest possible shoot, otherwise, depending on the pruned length, i.e. farthest apex
 
 def length_pool(year):
     """Returns a random number according to `year`

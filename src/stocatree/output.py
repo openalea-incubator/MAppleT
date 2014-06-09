@@ -19,7 +19,7 @@
 
 """
 import datetime
-import os.path as op
+from os.path import join
 
 
 class output(object):
@@ -75,9 +75,9 @@ class output(object):
         if self.verbose:
           print 'opening file %s' % self.filename
         if subdir:
-          self.file = open(op.join(self.directory, subdir, self.filename), 'w')
+          self.file = open(join(self.directory, subdir, self.filename), 'w')
         else:
-          self.file = open(op.join(self.directory, self.filename), 'w')
+          self.file = open(join(self.directory, self.filename), 'w')
       else:
         print 'File already openned !! Close it first.'
 
@@ -140,6 +140,9 @@ class counts(output):
       self.leaves += 1
       self.tla += metamer.leaf.area
 
+  def display(self):
+    return ['metamers', 'leaves', 'tla', 'fruits', 'fruitdw']
+
   def reset(self):
     self.metamers     = 0 # number of metamers
     self.gus          = 0 # number of growing units
@@ -194,6 +197,9 @@ class shoots(output):
     self.len_26_to_40 = 0
     self.len_over_40  = 0
 
+  def display(self):
+    return ['shorts', 'mediums', 'longs', 'florals']
+
   def __str__(self):
     res = "%20s=%10f\n%20s=%10f\n%20s=%10f\n%20s=%10f\n%20s=%10f\n%20s=%10f\n%20s=%10f" \
         % ("shorts", self.shorts,"mediums", self.mediums, "longs", self.longs,
@@ -235,13 +241,20 @@ class trunk(output):
   def __init__(self, directory='', init_date=datetime.datetime(1994,1,1), filename="trunk", frequency=365., verbose=False, tag=None):
     output.__init__(self, directory=directory, init_date=init_date, filename=filename, verbose=verbose, tag=tag)
 
+    self.trunk_radius = 0
+    self.trunk_area = 0
+
   def openfile(self, subdir=None):
     output.openfile(self, subdir)
     self.file.write('Date, SimuDay, Trunk radius, Trunk cross sectional area\n')
 
   def save(self, date, trunk_radius, trunk_cross_sectional_area):
+    self.trunk_radius = trunk_radius
+    self.trunk_area = trunk_cross_sectional_area
     self.file.write("{date}, {days}, {radius}, {section_area}\n".format(date=date, days=(date-self.init_date).days, radius=trunk_radius, section_area=trunk_cross_sectional_area))
 
+  def display(self):
+    return ['trunk_radius', 'trunk_area']
 
 class l_string(output):
     """Defines the output filename to store lstring information"""

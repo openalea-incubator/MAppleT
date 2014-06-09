@@ -174,6 +174,13 @@ class apex_data(object):
         #This is to avoid "1,2,3,4" growth units to be syllpetic at the first year
         self.sylleptic = sylleptic
 
+        #Flag to show that this apex was generated as a reaction to pruning
+        self.from_pruning = False
+        #Information related to pruning reaction
+        self.rank = 0
+        self.closest_apex = 0
+        self.farthest_apex = 0
+
     def set_observation(self, observation):
         """set the apex observation
 

@@ -20,8 +20,9 @@
     from openalea.stocatree.metamer import *
 """
 
-from vplants.plantgl.all import Vector3
-from math import acos
+from vplants.plantgl.all import Vector3, dot
+from openalea.stocatree.physics import rotate_frame_at_branch
+from math import acos, degrees
 import constants
 from srandom import boolean_event
 try:
@@ -135,9 +136,11 @@ class metamer_data(object):
         else:
             self.internode = internode
 
-        self.number = number
+        self.number = number                              # Yield the rank of the metamer
+        self.closest_apex = 0                             # Distance to the closest apex
+        self.farthest_apex = 0                            # Distance to the farthest apex
         self.observation = observation
-        self.parent_observation = parent_observation
+        self.parent_observation = parent_observation      # Yield the shoot type of that metamer
         self.parent_unit_id = parent_unit_id
         self.parent_fbr_id = parent_fbr_id
         self.parent_tree_id = parent_tree_id
@@ -150,6 +153,7 @@ class metamer_data(object):
         self.hlu = hlu
         self.cumulated_mass = 0.#in 'kg'
         self.radius = self.leaf.petiole_radius         # petiole_radius is in m
+        self.offset = 0   # used to shift first branching node to keep it from disapearing into cambial growth
         self.cumulated_torque = Vector3(0. ,0. ,0. )
         self.developped = False #// to avoid more than 1 lateral shoot
         self.phyllotactic_angle = p_angle #// azimuth / parent metamer (around h) #TODO must be in [0,2pi]
@@ -215,7 +219,7 @@ class metamer_data(object):
         self.sylleptic = False
         #Flag to set if a metamer should be pruned 
         self.to_prune = False
-        #Flag to signal a cut just after that metamer
+        #Flag to signal a cut 
         self.cut = False
 
     #def reorient_frame(self, initial_hlu, rotation_velocity, length):
@@ -463,6 +467,41 @@ class metamer_data(object):
             self.position = left_metamer_position + self.hlu.heading \
                 * self.length
 
+    def pruning_reaction_angle(self, phylo_angle):
+      """
+      :param hlu: Frame
+      :param phyllo_angle: float
+      :param farthest_apex: int
+      :param number: int
+      :returns branching_angle: float
+      :returns phyllotactic_angle: float
+      """
+    
+      #Determining angle between heading and vertical
+      angle_to_vert = round(acos(dot(self.hlu.heading.normed(), Vector3(0,0,1))),2)
+      print "####### Angle from heading to vert : ", angle_to_vert
+    
+      #Fixing the ratio of that angle to be used as branching angle depending on the pruning intensity
+      vert_ratio = 1 - ((1.0*self.number) / (self.number + self.farthest_apex))
+      print "####### Ratio from length : ", vert_ratio
+    
+      new_branching_angle = vert_ratio * angle_to_vert
+      print "####### Angle chosen : ", new_branching_angle
+    
+      #Determining a possible phyllotactic angle that will divert the less from vertical
+      angles = []
+
+      #for i in range(360):
+      #  hlu = rotate_frame_at_branch(self.hlu, new_branching_angle, i)
+      #  angles.append((acos(dot(hlu.heading.normed(), Vector3(0,0,1)))))
+      #return new_branching_angle, angles.index(min(angles)) 
+    
+      for i in range(5):
+        hlu = rotate_frame_at_branch(self.hlu, new_branching_angle, i * phylo_angle + self.phyllotactic_angle)
+        angles.append((acos(dot(hlu.heading.normed(), Vector3(0,0,1)))))
+      return new_branching_angle, angles.index(min(angles)) * phylo_angle + self.phyllotactic_angle
+
+
 def reaction_wood_target(up, heading, previous_heading):
     r"""Reaction wood target
 
@@ -524,9 +563,6 @@ def reaction_wood_target(up, heading, previous_heading):
         r = constants.pi
 
     return r
-
-
-
 
 
 def _clamp_if_near_zero(data, tol=0.0001):
