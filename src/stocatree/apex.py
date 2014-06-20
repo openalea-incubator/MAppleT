@@ -180,6 +180,8 @@ class apex_data(object):
         self.rank = 0
         self.closest_apex = 0
         self.farthest_apex = 0
+        #the cumulated sum of metamers sons
+        self.sons_nb = 0
 
     def set_observation(self, observation):
         """set the apex observation
@@ -243,7 +245,9 @@ class apex_data(object):
             #self.sylleptic = True
             return 'sylleptic_large'
             #return 'large'
-        #should never reach this line
+        else:
+          #should never reach this line, however old sequences may contain 9s
+          return 'dormant'
 
     def max_terminal_radius_target(self):
         """Set the max terminal radius :attr:`target_radius`

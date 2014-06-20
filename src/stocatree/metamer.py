@@ -139,6 +139,7 @@ class metamer_data(object):
         self.number = number                              # Yield the rank of the metamer
         self.closest_apex = 0                             # Distance to the closest apex
         self.farthest_apex = 0                            # Distance to the farthest apex
+        self.sons_nb = 0                                  # Cumulated sum of metamer sons
         self.observation = observation
         self.parent_observation = parent_observation      # Yield the shoot type of that metamer
         self.parent_unit_id = parent_unit_id

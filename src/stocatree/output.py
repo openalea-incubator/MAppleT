@@ -35,57 +35,49 @@ class output(object):
     This class also stored the time elapsed since the beginning.
 
     :param filename: a valid basename (e.g. 'output' in output.txt)
-    :param verbose: True/False
     :param frequency: a frequency to save the data
     :param tag: a tag for the filename
 
 
     """
-    def __init__(self, directory='', init_date=datetime.datetime(1994,1,1), filename=None, verbose=False, frequency=1., tag=None, extra=None, ext='.csv'):
+    def __init__(self, init_date=datetime.datetime(1994,1,1), frequency=1., filename=None, ext='.csv'):
       self.basename = filename
-      self.directory = directory
-      self.tag = tag
+      self.ext = ext
       self.init_date = init_date
-      self.build_filename(extra, ext)
       self.file = None
 
-      self.verbose = verbose
       self.frequency = frequency
       self.elapsed = datetime.timedelta(0)
       #by product
       self.period = 365.0 / self.frequency
 
 
-    def build_filename(self, extra=None, ext='.csv'):
+    def build_filename(self, directory='', tag=None):
       """
-      create the filename given an optional extra suffix that is used before the tag
+      create the filename given an optional tag suffix that is used before the extension
       """
-      self.filename = self.basename
-      if (extra != None) and (extra != ''):
-        self.filename += '_' + extra
+      filename = self.basename
+      if tag:
+        filename += '_' + tag
+      filename += self.ext
 
-      if self.tag:
-        self.filename += '_'+self.tag
+      self.filename = join(directory, filename)
 
-      self.filename += ext
-
-    def openfile(self, subdir=None):
-      """open the file object"""
+    def openfile(self):
+      """
+      open the file object
+      ..warning: `build_filename` must be called prior to `openfile`
+      """
       if self.file == None or self.file.closed:
-        if self.verbose:
-          print 'opening file %s' % self.filename
-        if subdir:
-          self.file = open(join(self.directory, subdir, self.filename), 'w')
-        else:
-          self.file = open(join(self.directory, self.filename), 'w')
+        print 'opening file %s' % self.filename
+        self.file = open(self.filename, 'a')
       else:
         print 'File already openned !! Close it first.'
 
     def close(self):
       """close the file object"""
       if self.file:
-        if self.verbose:
-          print 'Closing file %s ' % self.filename
+        print 'Closing file %s ' % self.filename
         self.file.close()
         self.file= None
 
@@ -113,8 +105,8 @@ class counts(output):
   Record the counting of multiple variables evolving during tree development
   """
 
-  def __init__(self, directory='', init_date=datetime.datetime(1994,1,1), filename="counts", frequency=365., verbose=False, tag=None):
-    output.__init__(self, directory=directory, init_date=init_date, filename=filename, verbose=verbose, tag=tag)
+  def __init__(self, init_date=datetime.datetime(1994,1,1), frequency=365., filename="counts", ext='.csv'):
+    output.__init__(self, init_date=init_date, frequency=frequency, filename=filename, ext=ext)
 
     self.metamers     = 0 # number of metamers
     self.gus          = 0 # number of growing units
@@ -123,8 +115,8 @@ class counts(output):
     self.fruits       = 0 # number of fruits
     self.fruitdw      = 0 # Total fruit Dry Weight
 
-  def openfile(self, subdir=None):
-    output.openfile(self, subdir)
+  def openfile(self):
+    output.openfile(self)
     self.file.write('Date, SimuDay, Metamers, GUs, Leaves, TLA, Fruits, Fruit DW\n')
 
   def update(self, metamer):
@@ -170,8 +162,8 @@ class shoots(output):
   Record the shoot demography per length type
   """
 
-  def __init__(self, directory='', init_date=datetime.datetime(1994,1,1), filename="shoots", frequency=4., verbose=False, tag=None):
-    output.__init__(self, directory=directory, init_date=init_date, filename=filename, verbose=verbose, tag=tag)
+  def __init__(self, init_date=datetime.datetime(1994,1,1), frequency=365., filename="shoots", ext='.csv'):
+    output.__init__(self, init_date=init_date, frequency=frequency, filename=filename, ext=ext)
 
     #self.file.write('#shorts\tlongs\tflorals\t0\tmediums\tlen_16_to_25\tlen_26_to_40\tlen_over_40\tfruits\n')
 
@@ -183,8 +175,8 @@ class shoots(output):
     self.len_26_to_40 = 0
     self.len_over_40  = 0
 
-  def openfile(self, subdir=None):
-    output.openfile(self, subdir)
+  def openfile(self):
+    output.openfile(self)
     self.file.write('Date, Florals, Shorts, Mediums, All_Longs, Longs_16_to_25, Longs_26_to_40, Longs_over_40\n')
 
 
@@ -218,11 +210,11 @@ class sequences(output):
   """
   Store each generated sequence during the simulation
   """
-  def __init__(self, directory='', init_date=datetime.datetime(1994,1,1), filename="sequences", frequency=5., verbose=False, tag=None, ext='.seq'):
-    output.__init__(self, directory=directory, init_date=init_date, filename=filename, verbose=verbose, tag=tag)
+  def __init__(self, init_date=datetime.datetime(1994,1,1), frequency=365., filename="sequences", ext='.seq'):
+    output.__init__(self, init_date=init_date, frequency=frequency, filename=filename, ext=ext)
 
-  def openfile(self, subdir=None):
-    output.openfile(self, subdir)
+  def openfile(self):
+    output.openfile(self)
     self.file.write("#save sequences of each apex\n\n1 VARIABLE\n\nVARIABLE 1 : VALUE\n\n")
   
   def save(self, sequence, position):
@@ -238,14 +230,14 @@ class trunk(output):
   Defines the output filename to store trunk information
   """
 
-  def __init__(self, directory='', init_date=datetime.datetime(1994,1,1), filename="trunk", frequency=365., verbose=False, tag=None):
-    output.__init__(self, directory=directory, init_date=init_date, filename=filename, verbose=verbose, tag=tag)
+  def __init__(self, init_date=datetime.datetime(1994,1,1), frequency=365., filename="trunk", ext='.csv'):
+    output.__init__(self, init_date=init_date, frequency=frequency, filename=filename, ext=ext)
 
     self.trunk_radius = 0
     self.trunk_area = 0
 
-  def openfile(self, subdir=None):
-    output.openfile(self, subdir)
+  def openfile(self):
+    output.openfile(self)
     self.file.write('Date, SimuDay, Trunk radius, Trunk cross sectional area\n')
 
   def save(self, date, trunk_radius, trunk_cross_sectional_area):
@@ -259,13 +251,13 @@ class trunk(output):
 class l_string(output):
     """Defines the output filename to store lstring information"""
 
-    def __init__(self, directory='', init_date=datetime.datetime(1994,1,1), filename="l-string", frequency=5., verbose=False, tag=None):
-      output.__init__(self, directory=directory, init_date=init_date, filename=filename, verbose=verbose, tag=tag)
+    def __init__(self, init_date=datetime.datetime(1994,1,1), frequency=365., filename="l-string", ext='.lsys'):
+      output.__init__(self, init_date=init_date, frequency=frequency, filename=filename, ext=ext)
       self.filename = filename
 
     #Added by Han on 12-12-2011
-    def build_filename(self, extra=""):
-        self.filename = extra + ".dat"
+    #def build_filename(self, extra=""):
+    #    self.filename = extra + ".dat"
 
     def save(self, lstring, date):
         self.file.write("%s\tR" % date)
@@ -366,112 +358,110 @@ TOPO\t\t\t\t\t\t\t\t\t\t\tTopDia\tXX\tYY\tZZ\tyear\tobservation\tlength\tleaf_st
 
 
 class mtg(output):
-    """a simple MTG classes to save output in MTG format."""
+  """a simple MTG classes to save output in MTG format."""
 
-    def __init__(self, directory='', init_date=datetime.datetime(1994,1,1), filename="", frequency=2., verbose=False, tag=None):
-      output.__init__(self, directory=directory, init_date=init_date, filename=filename, verbose=verbose, tag=tag)
-      self.columns        = 10;
-      self.current_column =  0;
-      self.header = header
-      self.filename = filename
+  def __init__(self, init_date=datetime.datetime(1994,1,1), frequency=365., filename="trunk", ext='.mtg'):
+    output.__init__(self, init_date=init_date, frequency=frequency, filename=filename, ext=ext)
 
-    #Added by Han on 12-12-2011
-    #def build_filename(self, extra=""):
-    #    self.filename = extra + ".mtg"
-
-    def write_leading_tabs(self):
-        for i in range(0, self.current_column):
-            self.file.write('\t')
-
-    def write_trailing_tabs(self):
-        res = '\t'* (self.columns - self.current_column)
-        self.file.write(res)
-
-    def write_header(self):
-        self.file.write(self.header)
-
-    def save(self, lstring, date, trunk_radius):
-        """
-
-        :param date: date in format compatible with `datetime.date()`
-        """
-        year = date.year
-        self.write_header()
-        self.current_column = 1
-        self.file.write("/T1\t")
-        self.write_trailing_tabs()
-        self.file.write("\t%.4f\t%.4f\t%.4f\t%.4f\t%4.0f\t%.4f\n" % \
-            (trunk_radius * 2000.0, 0.0, 0.0, 0.0, 1994, 0.0))
-
-        for i, elt in enumerate(lstring):
-            if i!=0:
-                #print lstring[i-1].name
-                previous = lstring[i-1].name
-            else:
-                #print 'NONE'
-                previous = None
-            if  elt.name=='growth_unit' and previous=='branch':
-                u = elt[0]
-                self.current_column += 1
-                if (self.current_column > self.columns):
-                    raise ValueError("ERROR: Not enough columns were allocated for the MTG file.\n");
-
-                self.write_leading_tabs()
-
-                if u.inflorescence:
-                    self.file.write('+I' + str(u.index))
-                else:
-                    self.file.write('+G' + str(u.index))
-                self.write_trailing_tabs();
-                self.file.write("\t\t\t\t\t%4.0f\n" % u.year)
-            elif elt.name=='growth_unit':
-                u = elt[0]
-                self.write_leading_tabs()
+    self.columns        = 10;
+    self.current_column =  0;
+    self.header = header
+    self.filename = filename
 
 
-                if u.index==1:
-                    self.file.write('/')
-                else:
-                    self.file.write('^<')
-                if u.inflorescence:
-                    self.file.write('I' + str(u.index))
-                else:
-                    self.file.write('G' + str(u.index))
-                self.write_trailing_tabs();
-                if u.index == 1:
-                    self.file.write("\t%.4f\t%.4f\t%.4f\t%.4f\t%4.0f\n" % \
-                        (trunk_radius * 2000.0, 0.0, 0.0, 0.0, u.year))
+  def write_leading_tabs(self):
+      for i in range(0, self.current_column):
+          self.file.write('\t')
 
-                else:
-                    self.file.write("\t\t\t\t\t%4.0f\n"  % u.year)
-            elif elt.name=='metamer':
-                # Modified by Han on 03-05-2011
-                m = lstring[i][0]
-                #m = elt[0]
-                self.write_leading_tabs();
-                if m.number==1:
-                    self.file.write("^/M%d"  % m.number)
-                else:
-                    self.file.write("^<M%d" % m.number)
-                self.write_trailing_tabs();
-                self.file.write("\t%.4f\t%.4f\t%.4f\t%.4f\t%4.0f\t%s\t%.4f\t%s\t%.4f\t%.4f\t%.4f\t%.4f\t%u\t%u\t%u\t%s\t%.4f\t%.4f\n" \
-                    % (m.radius * 2000.0, m.position.x, m.position.y, m.position.z, m.year,\
-                        m.parent_observation, m.length, m.leaf.state, m.leaf_area,\
-                        m.ta_pgl, m.sa_pgl, m.star_pgl,\
-                        m.parent_unit_id, m.parent_fbr_id, i,\
-                        m.zone, m.radius, m.fruit.mass))
-            elif elt.name=='apex' and not previous == 'branch':
-                a = elt
-                #This assert was filtered by Han on 06=07-2012 because of an
-                #assert error after the modification of plastochrons
-                #assert self.current_column > 0
-                self.current_column-=1
+  def write_trailing_tabs(self):
+      res = '\t'* (self.columns - self.current_column)
+      self.file.write(res)
+
+  def write_header(self):
+      self.file.write(self.header)
+
+  def save(self, lstring, date, trunk_radius):
+      """
+
+      :param date: date in format compatible with `datetime.date()`
+      """
+      year = date.year
+      self.write_header()
+      self.current_column = 1
+      self.file.write("/T1\t")
+      self.write_trailing_tabs()
+      self.file.write("\t%.4f\t%.4f\t%.4f\t%.4f\t%4.0f\t%.4f\n" % \
+          (trunk_radius * 2000.0, 0.0, 0.0, 0.0, 1994, 0.0))
+
+      for i, elt in enumerate(lstring):
+          if i!=0:
+              #print lstring[i-1].name
+              previous = lstring[i-1].name
+          else:
+              #print 'NONE'
+              previous = None
+          if  elt.name=='growth_unit' and previous=='branch':
+              u = elt[0]
+              self.current_column += 1
+              if (self.current_column > self.columns):
+                  raise ValueError("ERROR: Not enough columns were allocated for the MTG file.\n");
+
+              self.write_leading_tabs()
+
+              if u.inflorescence:
+                  self.file.write('+I' + str(u.index))
+              else:
+                  self.file.write('+G' + str(u.index))
+              self.write_trailing_tabs();
+              self.file.write("\t\t\t\t\t%4.0f\n" % u.year)
+          elif elt.name=='growth_unit':
+              u = elt[0]
+              self.write_leading_tabs()
+
+
+              if u.index==1:
+                  self.file.write('/')
+              else:
+                  self.file.write('^<')
+              if u.inflorescence:
+                  self.file.write('I' + str(u.index))
+              else:
+                  self.file.write('G' + str(u.index))
+              self.write_trailing_tabs();
+              if u.index == 1:
+                  self.file.write("\t%.4f\t%.4f\t%.4f\t%.4f\t%4.0f\n" % \
+                      (trunk_radius * 2000.0, 0.0, 0.0, 0.0, u.year))
+
+              else:
+                  self.file.write("\t\t\t\t\t%4.0f\n"  % u.year)
+          elif elt.name=='metamer':
+              # Modified by Han on 03-05-2011
+              m = lstring[i][0]
+              #m = elt[0]
+              self.write_leading_tabs();
+              if m.number==1:
+                  self.file.write("^/M%d"  % m.number)
+              else:
+                  self.file.write("^<M%d" % m.number)
+              self.write_trailing_tabs();
+              self.file.write("\t%.4f\t%.4f\t%.4f\t%.4f\t%4.0f\t%s\t%.4f\t%s\t%.4f\t%.4f\t%.4f\t%.4f\t%u\t%u\t%u\t%s\t%.4f\t%.4f\n" \
+                  % (m.radius * 2000.0, m.position.x, m.position.y, m.position.z, m.year,\
+                      m.parent_observation, m.length, m.leaf.state, m.leaf_area,\
+                      m.ta_pgl, m.sa_pgl, m.star_pgl,\
+                      m.parent_unit_id, m.parent_fbr_id, i,\
+                      m.zone, m.radius, m.fruit.mass))
+          elif elt.name=='apex' and not previous == 'branch':
+              a = elt
+              #This assert was filtered by Han on 06=07-2012 because of an
+              #assert error after the modification of plastochrons
+              #assert self.current_column > 0
+              self.current_column-=1
 
 
 
 
-        self.file.close()
-        self.file = None
+      self.file.close()
+      self.file = None
 
 
 
@@ -483,70 +473,73 @@ class Data(object):
     :class:`mtg` and :class:`shoots` and to keep track of stocatree revision and
     options, which is needed to reproduce results.
 
-
+    #wrong example needs update
     >>> from openalea.plantik.tools.config import ConfigParams
     >>> from openalea.stocatree import get_shared_data
     >>> from openalea.stocatree.output import Data
     >>> options = ConfigParams(get_shared_data('stocatree.ini'))
-    >>> data = Data(options=options, revision=None)
+    >>> data = Data(options=options)
     >>> data.shoots.openfile()
-    >>> data.shorts = 10
+    >>> data.shoots = 10
     >>> data.shoots.save('1995-10-10')
     >>> data.close_all()
 
     """
-    def __init__(self, options, init_date, revision=None, dir="./"):
+    def __init__(self, options, init_date, directory="./"):
       self.options = options                        #The options as defined in the .ini file and opend with ConfigParams
       self.init_date = init_date                    #The starting date of recording outputs
-      self.revision = revision                      #A number manually generated ?
       self.lstring = None                           #The lstring from lpy ?
-      self.verbose = options.general.verbose        #Bool defined in the options, i.e. .ini file
-      self.dir = dir# This is to store the results under a designated directory rather than
+      self.directory = directory# This is to store the results under a designated directory rather than
 
       #These are output objects added to the Data class, it may be more interesting to be able to add them
       #dynamically. Will require modifications in openfile and close_all
 
       if self.options.output.shoots:
-        self.shoots = shoots(directory=self.dir, init_date=self.init_date, tag=options.general.tag, verbose=self.verbose)
+        self.shoots = shoots(init_date=self.init_date)
 
       if self.options.output.sequences:
-        self.sequences = sequences(directory=self.dir, init_date=self.init_date, tag=options.general.tag, verbose=self.verbose)
-
-      if self.options.output.mtg :
-        self.mtg = mtg(directory=self.dir, init_date=self.init_date, tag=options.general.tag, verbose=self.verbose)
+        self.sequences = sequences(init_date=self.init_date)
 
       if self.options.output.trunk:
-        self.trunk = trunk(directory=self.dir, init_date=self.init_date, tag=options.general.tag, verbose=self.verbose)
+        self.trunk = trunk(init_date=self.init_date)
 
       if self.options.output.counts:
-        self.counts = counts(directory=self.dir, init_date=self.init_date, tag=options.general.tag, verbose=self.verbose)
-      #self.l_string =l_string(directory=self.dir, tag=options.general.tag, verbose=self.verbose)
+        self.counts = counts(init_date=self.init_date)
+
+      if self.options.output.mtg :
+        self.mtg = mtg(init_date=self.init_date)
+
+      #self.l_string =l_string(directory=self.directory, tag=options.general.tag, verbose=self.verbose)
       #self.light_interception=light_interception(tag=options.general.tag, verbose=self.verbose)
       
-      self.time = []
-      self.nfruits = []
-      self.mass_fruits = []
+      #self.time = []
+      #self.nfruits = []
+      #self.mass_fruits = []
 
-    def init(self):
+    def open_all(self, simu_id):
       """
-      init all the attributes of type :class:`~openalea.stocatree.output.output`
-      that is `trunk`, `shoots`, `sequences`, `mtg`.
+      open all the files of :class:`~openalea.stocatree.output.output`
+      i.e.: `shoots`, `sequences`, `trunk` and `counts`.
       """
 
       # init the shoots output
       if self.options.output.shoots:
+        self.shoots.build_filename(directory=self.directory, tag="{0}_{1}".format(self.options.general.tag, simu_id))
         self.shoots.openfile()
 
       #init the sequence
       if self.options.output.sequences:
+        self.sequences.build_filename(directory=self.directory, tag="{0}_{1}".format(self.options.general.tag, simu_id))
         self.sequences.openfile()
 
       # init trunk output
       if self.options.output.trunk:
+        self.trunk.build_filename(directory=self.directory, tag="{0}_{1}".format(self.options.general.tag, simu_id))
         self.trunk.openfile()
 
       # init counts output
       if self.options.output.counts:
+        self.counts.build_filename(directory=self.directory, tag="{0}_{1}".format(self.options.general.tag, simu_id))
         self.counts.openfile()
 
       # init the l_srting output
@@ -561,12 +554,13 @@ class Data(object):
         """pickle this data structure
 
         .. todo:: to be finalised"""
-        import pickle
-        file = open('data_'+self.options.general.tag+'.dat', 'w')
+        #import pickle
+        #file = open('data_'+self.options.general.tag+'.dat', 'w')
         #file.write(scdelf.revision + "\n")
         #for x,y in self.options.iteritems():
         #    file.write(str(x) + "\t\t" + str(y)+"\n")
-        file.close()
+        #file.close()
+        print("Data.save() is not implemented")
 
     def close_all(self):
       """

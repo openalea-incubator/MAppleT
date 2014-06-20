@@ -25,7 +25,8 @@ from openalea.sequence_analysis._sequence_analysis import srand
 
 import random
 import srandom
-import cPickle
+import numpy as np
+#import cPickle
 #import os
 
 
@@ -85,19 +86,19 @@ class Markov():
         assert maximum_length > minimum_length
         assert minimum_length > 0
 
-        self.max_sequence_length =  100
-        self.maximum_length      =  maximum_length
-        self.minimum_length      =  minimum_length
-        self.hsm_medium          =  None
-        self.hsm_long            =  None
-        self.hsm_short           =  None
-        self.hsm_96_medium       =  None
-        self.hsm_97_medium       =  None
-        self.hsm_98_medium       =  None
-        self.hsm_95_long         =  None
-        self.hsm_96_long         =  None
-        self.hsm_97_long         =  None
-        self.hsm_98_long         =  None
+        self.max_sequence_length  =  100
+        self.maximum_length       =  maximum_length
+        self.minimum_length       =  minimum_length
+        self.hsm_medium           =  None
+        self.hsm_long             =  None
+        self.hsm_short            =  None
+        self.hsm_medium1          =  None
+        self.hsm_medium2          =  None
+        self.hsm_medium3          =  None
+        self.hsm_long1            =  None
+        self.hsm_long2            =  None
+        self.hsm_long3            =  None
+        self.hsm_long4            =  None
 
 
 class DataTerminalFate(object):
@@ -139,30 +140,30 @@ class DataTerminalFate(object):
     """
     #Modified by Costes on 30-05-2012
     data = {
-        (1995, 'large') : [0.500, 0.167, 0.000, 0.333],
-        (1995, 'medium'): [0.000, 0.000, 0.000, 1.000],
-        (1995, 'small') : [0.100, 0.100, 0.300, 0.500],
-        (1995, 'floral'): [0.100, 0.300, 0.600, 0.000],
-        (1996, 'large') : [0.246, 0.185, 0.000, 0.569],
-        (1996, 'medium'): [0.016, 0.238, 0.032, 0.714],
-        (1996, 'small') : [0.066, 0.067, 0.317, 0.550],
-        (1996, 'floral'): [0.317, 0.250, 0.433, 0.000],
-        (1997, 'large') : [0.351, 0.106, 0.010, 0.533],
-        (1997, 'medium'): [0.123, 0.148, 0.063, 0.666],
-        (1997, 'small') : [0.015, 0.094, 0.453, 0.438],
-        (1997, 'floral'): [0.182, 0.249, 0.569, 0.000],
-        (1998, 'large') : [0.213, 0.082, 0.000, 0.705],
-        (1998, 'medium'): [0.027, 0.046, 0.016, 0.911],
-        (1998, 'small') : [0.000, 0.024, 0.205, 0.771],
-        (1998, 'floral'): [0.003, 0.413, 0.584, 0.000],
-        (1999, 'large') : [0.100, 0.050, 0.000, 0.850],
-        (1999, 'medium'): [0.000, 0.020, 0.130, 0.850],
-        (1999, 'small') : [0.000, 0.000, 0.375, 0.625],
-        (1999, 'floral'): [0.008, 0.325, 0.667, 0.000],
-        (2000, 'large') : [0.000, 0.100, 0.000, 0.900],
-        (2000, 'medium'): [0.000, 0.050, 0.050, 0.900],
-        (2000, 'small') : [0.000, 0.000, 0.350, 0.650],
-        (2000, 'floral'): [0.000, 0.200, 0.800, 0.000],}
+        (1, 'large') : [0.500, 0.167, 0.000, 0.333],
+        (1, 'medium'): [0.000, 0.000, 0.000, 1.000],
+        (1, 'small') : [0.100, 0.100, 0.300, 0.500],
+        (1, 'floral'): [0.100, 0.300, 0.600, 0.000],
+        (2, 'large') : [0.246, 0.185, 0.000, 0.569],
+        (2, 'medium'): [0.016, 0.238, 0.032, 0.714],
+        (2, 'small') : [0.066, 0.067, 0.317, 0.550],
+        (2, 'floral'): [0.317, 0.250, 0.433, 0.000],
+        (3, 'large') : [0.351, 0.106, 0.010, 0.533],
+        (3, 'medium'): [0.123, 0.148, 0.063, 0.666],
+        (3, 'small') : [0.015, 0.094, 0.453, 0.438],
+        (3, 'floral'): [0.182, 0.249, 0.569, 0.000],
+        (4, 'large') : [0.213, 0.082, 0.000, 0.705],
+        (4, 'medium'): [0.027, 0.046, 0.016, 0.911],
+        (4, 'small') : [0.000, 0.024, 0.205, 0.771],
+        (4, 'floral'): [0.003, 0.413, 0.584, 0.000],
+        (5, 'large') : [0.100, 0.050, 0.000, 0.850],
+        (5, 'medium'): [0.000, 0.020, 0.130, 0.850],
+        (5, 'small') : [0.000, 0.000, 0.375, 0.625],
+        (5, 'floral'): [0.008, 0.325, 0.667, 0.000],
+        (6, 'large') : [0.000, 0.100, 0.000, 0.900],
+        (6, 'medium'): [0.000, 0.050, 0.050, 0.900],
+        (6, 'small') : [0.000, 0.000, 0.350, 0.650],
+        (6, 'floral'): [0.000, 0.200, 0.800, 0.000],}
 
     def __init__(self):
         """Constructor description
@@ -191,10 +192,11 @@ class DataTerminalFate(object):
         :returns: an array containing the probabilities to have a large, medium,
             small or floral sequence.
         """
-        if year == 1994:
-            year = 1995
-        elif year < 1994 or year > 2000:
-            year = 2000
+        #Terminal fate for year 0 and 1 are the same
+        if year == 0:
+            year = 1
+        elif year < 0 or year > 6:
+            year = 6
 
         if code in self.codes.keys():
             return self.data[(year, code)]
@@ -375,72 +377,27 @@ def generate_floral_sequence():
     return seq
 
 
-def generate_trunk(select=[0,2]):
+def generate_trunk(trunk_seq='sequences.seq', select=0):
     """Generate a trunk sequence randomly selected within a list of hard-coded trunk sequences
 
     Used by :meth:`~openalea.stocatree.sequences.generate_sequence` only
 
-    :param list select: a list of trunk sequence index to use in simulations
-        (default is 0,2).
-
-    This function contains 4 explicit trunk sequences of 60 elements. This
-    function picks up randomly on of these trunk sequence. The *select* argument
-    restrict the selection to the index given in select. This is useful
-    for instance when one want to always use the same sequence.
+    :param list select: the index of the selected trunk in the list of trunk sequence (default is 0).
 
     :Example:
 
-        >>> deterministic_sequence = generate_trunk(select=[1])
+        >>> deterministic_sequence = generate_trunk(select=1)
 
-    .. warning::
-
-        The sequences have a length of 60. If a sequence is shorter,
-        then extra elements must be added using the code number 9.
-
-
-    .. warning:: Here are define the trunk sequences !!
     """
-    #The following statement was modified by Han on 03-05-2012 and used after
-    #trhe "trunk_sequences" statement is executed
-    ## The sequence of the trunk is fixed
-    #max_length = 60
-
-    #  // two observed trunk sequences of length 60
-    #trunk_sequences = [
-    #    [0, 0, 0, 0, 0,  0, 0, 0, 0, 0,  0, 0, 0, 0, 0,  0, 0, 0, 0, 0,  0, 0, 0, 0, 0,  0, 0, 3, 0, 3,  0, 0, 0, 0, 1,  0, 0, 1, 0, 4,  0, 0, 0, 0, 4,  0, 0, 0, 0, 0,  0, 4, 4, 0, 3,  0, 0, 0, 0, 9],
-    # [0, 0, 0, 0, 0,  0, 0, 0, 0, 0,  0, 0, 0, 0, 0,  0, 0, 0, 0, 0,  0, 0, 0, 0, 0,  0, 0, 0, 0, 0,  0, 0, 0, 0, 0,  0, 0, 0, 0, 4,  0, 0, 1, 0, 1,  1, 0, 1, 1, 0,  2, 0, 0, 0, 0,  9, 9, 9, 9, 9],
-    #    [0, 0, 0, 0, 0,  0, 0, 0, 0, 0,  0, 0, 0, 0, 0,  0, 0, 0, 0, 0,  0, 0, 0, 0, 0,  0, 0, 0, 0, 0,  0, 0, 0, 0, 0,  0, 0, 0, 0, 4,  0, 1, 0, 0, 1,  1, 0, 1, 1, 0,  2, 0, 0, 0, 0,  9, 9, 9, 9, 9],
-    # [0, 0, 0, 0, 0,  0, 0, 0, 0, 0,  0, 0, 0, 0, 0,  0, 0, 0, 0, 4,  0, 1, 0, 0, 1,  1, 0, 1, 1, 0,  2, 0, 0, 0, 0,  9, 9, 9, 9, 9,  9, 9, 9, 9, 9,  9, 9, 9, 9, 9,  9, 9, 9, 9, 9,  9, 9, 9, 9, 9]
-    #    ]
-
-
-    #The statements above were changed to the following, on 26-04-2012, by Han
-    s = open("sequences.seq")
-    trunk_sequences = cPickle.load(s)
-    sequences_lengths = []
-    for i in trunk_sequences:
-        sequences_lengths.append(len(i))
-    max_length = max(sequences_lengths)
-
-    #For test on 15-05-2012
-    #max_length=112
-    #trunk_sequences = [[0, 5, 5, 5, 5, 5, 5, 5, 6, 5, 5, 6, 6, 5, 5, 5, 7, 7, 5, 0, 0, 6, 6, 5, 5, 7, 7, 5, 0, 7, 0, 7, 7, 0, 0, 0, 3, 3, 3, 3, 2, 0, 3, 3, 3, 3, 3, 3, 3, 3, 0, 3, 3, 3, 2, 3, 2, 3, 3, 3, 3, 3, 3, 3, 3, 3, 2, 3, 2, 3, 3, 3, 3, 2, 2, 3, 1, 3, 2, 3, 3, 3, 3, 3, 2, 3, 3, 2, 2, 2, 2, 2, 3, 3, 2, 0, 0, 0, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9]]
-    #trunk_sequences = [[0, 0, 0, 1, 5, 5, 5, 5, 6, 5, 5, 6, 6, 5, 5, 5, 7, 7, 5, 0, 0, 6, 6, 5, 5, 7, 7, 5, 0, 7, 0, 7, 7, 0, 0, 0, 3, 3, 3, 3, 2, 0, 3, 3, 3, 3, 3, 3, 3, 3, 0, 3, 3, 3, 2, 3, 2, 3, 3, 3, 3, 3, 3, 3, 3, 3, 2, 3, 2, 3, 3, 3, 3, 2, 2, 3, 1, 3, 2, 3, 3, 3, 3, 3, 2, 3, 3, 2, 2, 2, 2, 2, 3, 3, 2, 0, 0, 0, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9]]
-
-    assert len(select) <= len(trunk_sequences)
-    assert min(select) >=0
-    assert max(select) < len(trunk_sequences)
-
-    #number =  len(select)
-    # check size of trunk_sequences
-    #select_trunk = select[srandom.random(number)]
-    select_trunk = select[0]
-    i = 0
-    sequence = []
-    for i in range(0, max_length):
-        if trunk_sequences[select_trunk][i] == 9:
-            break
-        sequence.append([None, trunk_sequences[select_trunk][i]])
+    s = np.loadtxt(trunk_seq)
+    print('There are {0} sequences in the files'.format(len(s)))
+    assert 0 <= select < len(s)
+    seq = list(s[select])
+    sequence =[]
+    for obs in seq:
+      if obs == 9:
+        break
+      sequence.append([None, obs])
 
     #TODO comment this to get same results as in MAppleT. ???
     sequence.reverse()
@@ -495,8 +452,8 @@ def _generate_random_draw_sequence():
 
 #// Generation of sequences from Markov chains, based directly on the work
 #// of Michael Renton
-def generate_sequence(obs, markov=None, year=1994, second_year_draws=False,
-                      select_trunk=[0,2]):
+def generate_sequence(obs, markov=None, year=0, second_year_draws=False,
+                      trunk_seq='sequences.seq', select_trunk=0):
     """Generation of sequences from Markov chains, based directly on the work
     of Michael Renton
 
@@ -511,12 +468,11 @@ def generate_sequence(obs, markov=None, year=1994, second_year_draws=False,
 
     :param obs: the apex observation in ['trunk', 'small', 'floral', 'medium', 'large']
     :param markov: an instance of :class:`~openalea.stocatree.sequences.Markov`
-    :param year: a valid year
+    :param year: the simulation year, first year is 0
     :param second_year_draws: if True, uses the alternative `_generate_random_sequences`
         function instead of generate_bounded_hsm_sequence. (default is False).
-        Can only be set to True is year=1995
-    :param list select_trunk: restrict selection of trunk sequences to this list
-        (default is [0,2]). See :func:`generate_trunk`
+        Can only be set to True if year=1
+    :param int select_trunk: selection of trunk sequences within the list. See :func:`generate_trunk`
 
 
     :returns: a random sequence
@@ -527,7 +483,7 @@ def generate_sequence(obs, markov=None, year=1994, second_year_draws=False,
     
     #The "sylleptic"s to the conditions as following were added by Han on 30-04-2012
     if obs == 'trunk':
-        return generate_trunk(select=select_trunk)
+        return generate_trunk(trunk_seq=trunk_seq, select=select_trunk)
     elif obs == 'small' or obs == 'sylleptic_short':
         return generate_short_sequence()
     elif obs == 'floral':
@@ -535,7 +491,7 @@ def generate_sequence(obs, markov=None, year=1994, second_year_draws=False,
     elif obs == 'medium' or obs == 'sylleptic_medium':
         return generate_bounded_hsm_sequence(markov.hsm_medium,  5, 15);
     elif obs == 'large' or obs == 'sylleptic_large':
-        if (second_year_draws and year== 1995):
+        if (second_year_draws and year== 1):
             return _generate_random_draw_sequence()
         else:
             res = length_pool(year)
@@ -549,7 +505,7 @@ def generate_sequence(obs, markov=None, year=1994, second_year_draws=False,
     else:
         raise("ERROR: A bad sequence observation (%s) was passed to generate_sequence().\n" % obs)
 
-def generate_pruned_sequence(obs, rank, closest_apex, farthest_apex, markov=None, year=1994 ):
+def generate_pruned_sequence(obs, rank, closest_apex, farthest_apex, sons_nb, markov=None, year=0 ):
     #The pruned length is assimilated to the distance to the farthest apex
 
     #Case of pruning a shoot w/o branching
@@ -576,30 +532,60 @@ def generate_pruned_sequence(obs, rank, closest_apex, farthest_apex, markov=None
         return generate_floral_sequence()
 
     #Case of pruning a shoot with branching
-    #Then depending on the pruned length, shoot type may be upgraded
-    #or vigor increased by using previous year of HSMC
+    #Then depending on the pruned length and biomass represented by the sons_nb,
+    #shoot type may be upgraded or vigor increased by using previous year of HSMC
     else:
-      
-        return generate_trunk(select=select_trunk)
-    elif obs == 'small' or obs == 'sylleptic_short':
-        return generate_short_sequence()
-    elif obs == 'floral':
-        return generate_floral_sequence()
-    elif obs == 'medium' or obs == 'sylleptic_medium':
-        return generate_bounded_hsm_sequence(markov.hsm_medium,  5, 15);
-    elif obs == 'large' or obs == 'sylleptic_large':
-        if (second_year_draws and year== 1995):
-            return _generate_random_draw_sequence()
+      print("######## Pruning reaction from shoot with branching \n \
+            closest Apex: {0} - Farthest Apex: {1} - Sons nb: {2}".format(closest_apex, farthest_apex, sons_nb))
+
+      if sons_nb >= 2*farthest_apex:
+        hsm_react_long, hsm_react_medium = pruned_hsmc(year, markov)
+      else:
+        hsm_react_long = markov.hsm_long
+        hsm_react_medium = markov.hsm_medium
+
+
+      if obs == 'trunk' or obs == 'large' or obs == 'sylleptic_large':
+        if farthest_apex > 30: 
+          return generate_bounded_hsm_sequence(hsm_react_long, 41, markov.maximum_length)
+        elif farthest_apex > 20:
+          return generate_bounded_hsm_sequence(hsm_react_long, 26, 41)
+        elif farthest_apex > 8:
+          return generate_bounded_hsm_sequence(hsm_react_long, 15, 26)
         else:
-            res = length_pool(year)
-            assert res in [1, 2, 3], 'Error Bad Length pool category'
-            if res == 1:
-                return generate_bounded_hsm_sequence(markov.hsm_long, 15, 26)
-            elif res == 2:
-                return generate_bounded_hsm_sequence(markov.hsm_long, 26, 41)
-            elif res == 3:
-                return generate_bounded_hsm_sequence(markov.hsm_long, 41, markov.maximum_length)
- 
+          return generate_bounded_hsm_sequence(hsm_react_medium,  5, 15);
+      elif obs == 'medium'or obs == 'sylleptic_medium':
+        if farthest_apex > 5:
+          return generate_bounded_hsm_sequence(hsm_react_long,  15, 26);
+        else:
+          return generate_bounded_hsm_sequence(hsm_react_medium,  5, 15);
+      elif obs == 'small' or obs == 'sylleptic_short':
+        return generate_short_sequence()
+      elif obs == 'floral':
+        return generate_floral_sequence()
+
+def pruned_hsmc(year, markov):
+  """
+  Return a long and a medium hsmc model from the year before the current one
+  """
+
+  if year < 3:
+      hsmc_medium = markov.hsm_medium1
+      hsmc_long   = markov.hsm_long1
+  elif year == 3:
+      hsmc_medium = markov.hsm_medium2
+      hsmc_long   = markov.hsm_long2
+  elif year == 4:
+      hsmc_medium = markov.hsm_medium3
+      hsmc_long   = markov.hsm_long3
+  else:
+      hsmc_medium = markov.hsm_medium4
+      hsmc_long   = markov.hsm_long4
+
+  return hsmc_long, hsmc_medium
+
+
+
     #if the trunk was cut far enough from the top, generate the longest possible shoot, otherwise, depending on the pruned length, i.e. farthest apex
 
 def length_pool(year):
@@ -613,13 +599,13 @@ def length_pool(year):
     pool_1998 = [0.940, 0.060, 0.000]
     pool_1999 = [0.965, 0.035, 0.000]
 
-    if year == 1994 or year == 1995:
+    if year == 0 or year == 1:
         return _non_parametric_distribution(pool_1995)
-    elif year == 1996:
+    elif year == 2:
         return _non_parametric_distribution(pool_1996)
-    elif year == 1997:
+    elif year == 3:
         return _non_parametric_distribution(pool_1997)
-    elif year == 1998:
+    elif year == 4:
         return _non_parametric_distribution(pool_1998)
     else:
         return _non_parametric_distribution(pool_1999)

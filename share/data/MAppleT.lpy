@@ -43,7 +43,7 @@ from openalea.stocatree.wood import Wood
 from openalea.stocatree.internode import Internode
 from openalea.stocatree.apex import apex_data
 from openalea.stocatree.tools.simulation import SimulationStocatree
-from openalea.stocatree.sequences import Markov, generate_sequence, terminal_fate
+from openalea.stocatree.sequences import Markov, generate_sequence, generate_pruned_sequence, terminal_fate
 from openalea.stocatree.metamer import metamer_data
 from openalea.stocatree.growth_unit import growth_unit_data
 from openalea.stocatree.physics import rotate_frame_at_branch, rupture
@@ -98,7 +98,7 @@ if verbose:
 
 # Then, define a data structure to store outputs such as MTG, shoots, sequences and so on
 # This will be provided in case of a continued simulation
-data = Data(options=options, init_date=simulation.date, dir=output_directory, revision=__revision__)
+data = Data(options=options, init_date=simulation.date, directory=output_directory)
 
 
 
@@ -109,14 +109,15 @@ ground_surface = groundSurface(stride, stride)
 petal_surface = petalSurface(stride, stride)
 
 # init markov and tree instances
-markov          = Markov(**options.markov.__dict__)
-markov.hsm_96_medium = HiddenSemiMarkov(get_shared_data('fmodel_fuji_5_15_y3_96.txt'))
-markov.hsm_97_medium = HiddenSemiMarkov(get_shared_data('fmodel_fuji_5_15_y4_97.txt'))
-markov.hsm_98_medium = HiddenSemiMarkov(get_shared_data('fmodel_fuji_5_15_y5_98.txt'))
-markov.hsm_95_long = HiddenSemiMarkov(get_shared_data('fmodel_fuji_y12.txt'))
-markov.hsm_96_long = HiddenSemiMarkov(get_shared_data('fmodel_fuji_16_65_y3_96.txt'))
-markov.hsm_97_long = HiddenSemiMarkov(get_shared_data('fmodel_fuji_16_65_y4_97.txt'))
-markov.hsm_98_long = HiddenSemiMarkov(get_shared_data('fmodel_fuji_16_65_y5_98.txt'))
+markov          = Markov(options.markov.maximum_length, options.markov.minimum_length)
+markov.hsm_medium1 = HiddenSemiMarkov(options.markov.hsm_medium1)
+markov.hsm_medium2 = HiddenSemiMarkov(options.markov.hsm_medium2)
+markov.hsm_medium3 = HiddenSemiMarkov(options.markov.hsm_medium3)
+markov.hsm_medium4 = HiddenSemiMarkov(options.markov.hsm_medium4)
+markov.hsm_long1 = HiddenSemiMarkov(options.markov.hsm_long1)
+markov.hsm_long2 = HiddenSemiMarkov(options.markov.hsm_long2)
+markov.hsm_long3 = HiddenSemiMarkov(options.markov.hsm_long3)
+markov.hsm_long4 = HiddenSemiMarkov(options.markov.hsm_long4)
 
 # The following objects (tree, wood, internode, apex_parameters, leaf, fruit
 # are used to store the user parameters and are used by the metamer_data
@@ -129,11 +130,8 @@ markov.hsm_98_long = HiddenSemiMarkov(get_shared_data('fmodel_fuji_16_65_y5_98.t
 
 #!!! apices and leaves are specific to a metamer later on a deepcopy is used.
 
-##The following lines were moved to Start() by Han on 01-03-2012
-temp = {}
-temp.update(options.apex.__dict__)
-temp.update(options.markov.__dict__)
-apex_parameters = temp
+apex_parameters = {'maximum_length':options.markov.maximum_length, 'minimum_length':options.markov.minimum_length}
+apex_parameters.update(options.apex.__dict__)
 #leaf_parameters = options.leaf.__dict__
 #fruit_parameters = options.fruit.__dict__
 
@@ -178,7 +176,7 @@ module root(): scale=1
 
 numerical_resolution_counter = 0
 
-
+#define a unique id to identify the simulation
 global current_experiment
 
 
@@ -221,18 +219,13 @@ def Start():
 
     if verbose:
       print "Simulation seed:", simulation.seed
-      print "Tree floral branching angle = {0}, instead of {1}".format(tree.floral_branching_angle, options.tree.floral_angle)
+
     # init the data to store the required outputs (sequence, lstring, mtg, ...)
-    data.init()
+    data.open_all(current_experiment)
 
+    # Trunk length is used to estimate the trunk phylocron to make it grow entirely during the vegetative period
     global trunk_len
-
-    #Added by Han on 06-07-2012, to calculate the length of corresponding sequence
-    seq_op = open("sequences.seq")
-    sequences = cPickle.load(seq_op)
-    for i in sequences[int(options.stocatree.select_trunk)]:
-        if i!=9:
-            trunk_len+=1
+    trunk_len = len(generate_sequence(obs='trunk',trunk_seq=options.stocatree.trunk_seq, select_trunk=int(options.stocatree.select_trunk)))
 
     #file used to detect if simulation went through the STAR computation or crashed before
     if options.output.light_interception:
@@ -262,18 +255,19 @@ def StartEach():
     if simulation.phase == update_parameters:
       data.counts.reset()
 
-    if simulation.date.year in [1994,1995]:
-        markov.hsm_medium = markov.hsm_96_medium
-        markov.hsm_long   = markov.hsm_95_long
-    elif simulation.date.year == 1996:
-        markov.hsm_medium = markov.hsm_96_medium
-        markov.hsm_long   = markov.hsm_96_long
-    elif simulation.date.year == 1997:
-        markov.hsm_medium = markov.hsm_97_medium
-        markov.hsm_long   = markov.hsm_97_long
+    simyear = simulation.date.year - simulation.starting_date.year
+    if simyear in [0,1]:
+        markov.hsm_medium = markov.hsm_medium1
+        markov.hsm_long   = markov.hsm_long1
+    elif simyear == 2:
+        markov.hsm_medium = markov.hsm_medium2
+        markov.hsm_long   = markov.hsm_long2
+    elif simyear == 3:
+        markov.hsm_medium = markov.hsm_medium3
+        markov.hsm_long   = markov.hsm_long3
     else:
-        markov.hsm_medium = markov.hsm_98_medium
-        markov.hsm_long   = markov.hsm_98_long
+        markov.hsm_medium = markov.hsm_medium4
+        markov.hsm_long   = markov.hsm_long4
 
 
     if simulation.phase == writelstring:
@@ -527,14 +521,16 @@ def EndEach(lstring,scene):
 
           if numerical_resolution_counter == 0 and simulation.events.qualitree_export.active:
             sub_dir = op.join(output_directory, "{0}_{1}".format(simulation.date.year, simulation.date.month ), options.qualitree.prefix )
+            
             #MTG is required so generating one for that specific purpose
             ensureLocalDir(sub_dir)
-            data.mtg.build_filename( op.join(sub_dir, current_experiment  ) )
-            data.mtg.init()
+            data.mtg.build_filename(directory=sub_dir, tag="{0}_{1}".format(current_experiment, options.general.tag)) 
+            data.mtg.openfile()
+
             if verbose:
               print "Exporting MTG for QualiTree as: ", data.mtg.filename
             data.mtg.save(lstring, simulation.date, tree.trunk_radius)
-
+            data.mtg.close()
             #Then the 3D scene containing only the leaves is also required
             lvs = pgl.Scene([ sh for sh in scene if sh.appearance.getName() == "Color_15"])
 
@@ -583,12 +579,13 @@ def EndEach(lstring,scene):
             #Output of MTG
             if options.output.mtg :
               ensureLocalDir(sub_dir)
-              data.mtg.build_filename( op.join(sub_dir, current_experiment) )
-              data.mtg.init()
+              data.mtg.build_filename(directory=sub_dir, tag="{0}_{1}".format(current_experiment, options.general.tag)) 
+              #data.mtg.init()
+              data.mtg.openfile()
               if verbose:
                 print "Saving MTG as: ", data.mtg.filename
               data.mtg.save(lstring, simulation.date, tree.trunk_radius)
-
+              data.mtg.close()
             # snapshot of the scene
             if options.output.saveimage :
               ensureLocalDir(sub_dir)
@@ -621,12 +618,14 @@ def EndEach(lstring,scene):
           sub_dir = op.join(output_directory, "{0}_{1}".format(simulation.date.year, simulation.date.month ) )
           ensureLocalDir(sub_dir)
 
+          data.close_all()
           simulation.load_save(thestring, data, tree, bud_break)
           simufile = op.join(sub_dir, current_experiment + '.simu') 
           f = open(simufile, 'w')
           cPickle.dump(simulation, f)
           simulation.unload_save()
           f.close()
+          data.open_all(current_experiment)
               
           useGroup(update_parameters)
           simulation.phase = update_parameters
@@ -641,7 +640,6 @@ def End(lstring,scene):
 
     global data
     data.close_all()
-    data.save()
 
     endtime = time.time() - starttime
     if verbose:
@@ -785,6 +783,7 @@ metamer(m) >> SB() branch() metamer(mb) EB() metamer(mr):
     # update distance from apex
     m.closest_apex = min(mb.closest_apex, mr.closest_apex) + 1
     m.farthest_apex = max(mb.farthest_apex, mr.farthest_apex) + 1
+    m.sons_nb = mb.sons_nb + mr.sons_nb
 
     if m.leaf.state=='growing':
         radius = optimisation.get_new_radius(radius, m.leaf.petiole_radius)
@@ -811,6 +810,7 @@ metamer(m) >> metamer(mr):
     # update distance from apex
     m.closest_apex = mr.closest_apex + 1
     m.farthest_apex = mr.farthest_apex + 1
+    m.sons_nb = mr.sons_nb + 1
 
     if m.leaf.state == 'growing':
         radius = optimisation.get_new_radius(mr.radius, m.leaf.petiole_radius)
@@ -832,6 +832,7 @@ metamer(m) >> apex(a):
     # update distance from apex
     m.closest_apex = 0
     m.farthest_apex = 0
+    m.sons_nb = 0
 
     if m.leaf.state=='growing':
         radius = optimisation.get_new_radius(a.radius, m.leaf.petiole_radius)
@@ -862,8 +863,8 @@ apex(a):
     #   (a.parent_observation == 'floral' or bud_break or \
     #   (sylleptic_year and a.year < simulation.date.year and (a.get_observation() == 'small' or a.get_observation() == 'medium' or a.get_observation() == 'large')))):
     if(a.sequence_position == 0 and a.get_observation()!='dormant' and (a.sylleptic or bud_break) ):
-      if debug:
-        print("Group 3: New sequence of type {0} from parent_obs {2} @ {1} (syll={3})".format(a._observation, simulation.date, a.parent_observation, a.sylleptic))
+      #if debug:
+      #  print("Group 3: New sequence of type {0} from parent_obs {2} @ {1} (syll={3})".format(a._observation, simulation.date, a.parent_observation, a.sylleptic))
       a.parent_observation = a.get_observation()
 
       #Added by Han on 15-05-2012
@@ -878,12 +879,15 @@ apex(a):
           a.set_observation('large')
 
       if a.from_pruning:
-        print "####################### PRUNED APEX #############################"
-        a.sequence  = generate_pruned_sequence(obs=a.get_observation(), rank=a.rank, closest_apex=a.closest_apex, farthest_apex=a.farthest_apex, markov=markov, year=simulation.date.year )
+        if debug:
+          print "####################### PRUNED APEX #############################"
+        a.sequence  = generate_pruned_sequence(obs=a.get_observation(), rank=a.rank, closest_apex=a.closest_apex, farthest_apex=a.farthest_apex, sons_nb=a.sons_nb, markov=markov, year=simulation.date.year )
       else:
-        a.sequence  = generate_sequence(a.get_observation(),\
-            markov, simulation.date.year, options.stocatree.second_year_draws,
-            select_trunk=[int(options.stocatree.select_trunk)])
+        a.sequence  = generate_sequence(a.get_observation(), \
+                      markov, simulation.date.year - simulation.starting_date.year, \
+                      options.stocatree.second_year_draws, \
+                      trunk_seq=options.stocatree.trunk_seq, \
+                      select_trunk=int(options.stocatree.select_trunk))
       
       a.sequence_position = len(a.sequence)
       if (a.get_observation()=='trunk'):
@@ -893,7 +897,8 @@ apex(a):
       elif (a.get_observation()=='floral'):
           a.set_observation('dormant')
       else:
-          a.set_observation(terminal_fate(simulation.date.year,a.get_observation()))
+          a.set_observation(terminal_fate(simulation.date.year - simulation.starting_date.year, \
+                            a.get_observation()))
 
 
       a.radius = 0
@@ -925,7 +930,7 @@ apex(a):
 
 
       # save sequences into output data except for florals and trunk
-      if (options.output.sequences and simulation.date.year < 1999 and (a.parent_observation in ['large', 'medium', 'small'])):
+      if (options.output.sequences and (simulation.date.year - simulation.starting_date.year) < 5 and (a.parent_observation in ['large', 'medium', 'small'])):
         data.sequences.save(a.sequence, a.sequence_position)
 
       #Added by Han on 29-05-2012
@@ -1053,8 +1058,6 @@ metamer(m) > metamer(mr) apex(a):
             sylleptic_apex.parent_fbr_id = tree.first_branches
         else:
             sylleptic_apex.parent_fbr_id = m.parent_fbr_id
-        if debug:
-          print "Producing floral apex with syll {}".format(a.sylleptic)
         produce metamer(m) SB() branch() apex(sylleptic_apex) EB()
 
 metamer(m):
@@ -1103,8 +1106,8 @@ metamer(m):
             a.parent_fbr_id = tree.first_branches
         else:
             a.parent_fbr_id = m.parent_fbr_id
-        if debug:
-          print("Group 4: Metamer {2} of shoot {3} generates lateral Apex to generate {1} shoot @ {0}".format(simulation.date, a.get_observation(), m.number, m.parent_unit_id))
+        #if debug:
+        #  print("Group 4: Metamer {2} of shoot {3} generates lateral Apex to generate {1} shoot @ {0}".format(simulation.date, a.get_observation(), m.number, m.parent_unit_id))
         produce metamer(m) SB() branch() apex(a) EB()
     else:
         produce metamer(m)
@@ -1149,6 +1152,7 @@ metamer(m) > X :
       pruning_apex.rank = m.number
       pruning_apex.closest_apex = m.closest_apex
       pruning_apex.farthest_apex = m.farthest_apex
+      pruning_apex.sons_nb = m.sons_nb
 
       if m.parent_fbr_id == 0:
         tree.first_branches +=1
