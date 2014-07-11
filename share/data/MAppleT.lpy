@@ -534,7 +534,7 @@ def EndEach(lstring,scene):
             #Then the 3D scene containing only the leaves is also required
             lvs = pgl.Scene([ sh for sh in scene if sh.appearance.getName() == "Color_15"])
 
-            export2qualitree(save_pth = sub_dir, mtg_file_path = data.mtg.filename, leaf_scene = lvs, nom_arbre = "MAppleT_"+current_experiment, date = options.qualitree.date, variete = options.qualitree.variety , SLA = options.qualitree.sla, densite_MS_rameaux = options.qualitree.specific_weight, TMS_fruits = options.qualitree.fruit_dwc, SR = options.qualitree.shoot_root_ratio, userEllipse=True)
+            export2qualitree(save_pth = sub_dir, mtg_file_path = data.mtg.filename, leaf_scene = lvs, nom_arbre = "MAppleT_"+options.qualitree.name_suffix, date = options.qualitree.date, variete = options.qualitree.variety , SLA = options.qualitree.sla, densite_MS_rameaux = options.qualitree.specific_weight, TMS_fruits = options.qualitree.fruit_dwc, SR = options.qualitree.shoot_root_ratio, userEllipse=True)
             
 
           #-------------------------------------------------------------------------#

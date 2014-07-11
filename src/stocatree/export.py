@@ -337,9 +337,10 @@ def ellipseDesc(lps):
     rx=ry=rz=1
 
   #x1, y1, z1 #Conversion repère MappleT (m) à reprère Qualitree (q) : Xq=Xm Yq=Zm Zq=-Ym. 
-  #Due to change of coordinate axis, rotation needs - pi
-    
-  return cx*unit, cz*unit, -cy*unit, rx*unit, rz*unit, ry*unit, az-3.1415927
+  #Due to change of coordinate axis, rotation needs - pi  <-- apparently not !
+  #return cx*unit, cz*unit, -cy*unit, rx*unit, rz*unit, ry*unit, az-3.1415927
+
+  return cx*unit, cz*unit, -cy*unit, rx*unit, rz*unit, ry*unit, az
 
 #===========================================================#
 
