@@ -503,7 +503,7 @@ def tree_csv(save_pth, nom_arbre, date, variete, vr_masse_seche, jr_masse_seche,
 
 #===========================================================#
 
-def export2qualitree(save_pth, mtg_file_path, leaf_scene, nom_arbre,date,variete,SLA,densite_MS_rameaux,TMS_fruits,SR,userEllipse=True, charge_fruits=None,seed=None):
+def export2qualitree(save_pth, mtg_file_path, leaf_scene, nom_arbre,date,variete,SLA,densite_MS_rameaux,TMS_fruits,SR,userEllipse=True, charge_fruits=None,seed=None, pf_type='default'):
     '''
     Converti un fichier .mtg généré par MAppleT en une architecure au format Qualitree. Le script .sql est renvoyé en sorti de cette fonction (il faudra l'enregistrer dans un fichier),
     des fichiers .csv correspondants aux tables de la bdd Qualitree sont aussi générés (cela permet de visualiser le résultat plus facilement qu'en SQL).
@@ -579,24 +579,14 @@ def export2qualitree(save_pth, mtg_file_path, leaf_scene, nom_arbre,date,variete
     #save(tab_architecture,'test.csv')
 
     #=====================================#
-    # Generate info for remeauxmixte table#
+    # Generate info for rameauxmixte table#
     #=====================================#
 
-    if charge_fruits == None:
-        tab_rameauxmixte = [[names[x],
-                             vol_uc(x)*densite_MS_rameaux,
-                             fruit_ram(x),
-                             fruit_ram_ms(x),
-                             nb_leafy_rameau_cat(x, 'small'),
-                             la_rameau_cat(x, 'small')/SLA + vol_rameau_cat(x, 'small')*densite_MS_rameaux,#MS feuilles + tiges des pousses feuillées
-                             nb_leafy_rameau_cat(x, 'medium'),
-                             la_rameau_cat(x, 'medium')/SLA + vol_rameau_cat(x, 'medium')*densite_MS_rameaux,#MS feuilles + tiges des pousses feuillées
-                             nb_leafy_rameau_cat(x, 'large'),
-                             la_rameau_cat(x, 'large')/SLA + vol_rameau_cat(x, 'large')*densite_MS_rameaux,#MS feuilles + tiges des pousses feuillées
-                             Index(x),
-                             TMS_fruits,
-                           ]for x in ram_mixtes]
-        #save(tab_rameauxmixte,'test2.csv')
+    ### Charge option
+    if charge_fruits == None:        
+        fruit_nb = fruit_ram
+        fruit_dw = fruit_ram_ms
+
     else:
         charge_fruits = float(charge_fruits)
         assert(0. <= charge_fruits and charge_fruits <= 1.)
@@ -613,19 +603,81 @@ def export2qualitree(save_pth, mtg_file_path, leaf_scene, nom_arbre,date,variete
         inflos = inflos[0:nb_F]#On choisi au hasard les inflorescences portant un fruit.
         ram_mixte_nb_F = {x:inflos.count(x) for x in ram_mixtes} 
 
-        tab_rameauxmixte = [[names[x],
-                        vol_uc(x)*densite_MS_rameaux,
-                        ram_mixte_nb_F[x],
-                        ram_mixte_nb_F[x]*ms_moy_fruit,
-                        nb_leafy_rameau_cat(x, 'small'),
-                        la_rameau_cat(x, 'small')/SLA + vol_rameau_cat(x, 'small')*densite_MS_rameaux,#MS feuilles + tiges des pousses feuillées
-                        nb_leafy_rameau_cat(x, 'medium'),
-                        la_rameau_cat(x, 'medium')/SLA + vol_rameau_cat(x, 'medium')*densite_MS_rameaux,#MS feuilles + tiges des pousses feuillées
-                        nb_leafy_rameau_cat(x, 'large'),
-                        la_rameau_cat(x, 'large')/SLA + vol_rameau_cat(x, 'large')*densite_MS_rameaux,#MS feuilles + tiges des pousses feuillées
-                        Index(x),
-                        TMS_fruits,
-                    ]for x in ram_mixtes]
+        fruit_nb = lambda x:ram_mixte_nb_F[x]
+        fruit_dw = lambda x:ram_mixte_nb_F[x]*ms_moy_fruit
+
+    ### Option leafy_shoot type
+    small_nb = lambda x: nb_leafy_rameau_cat(x, 'small')
+    small_dw = lambda x: la_rameau_cat(x, 'small')/SLA + vol_rameau_cat(x, 'small')*densite_MS_rameaux
+    medium_nb = lambda x: nb_leafy_rameau_cat(x, 'medium')
+    medium_dw = lambda x: la_rameau_cat(x, 'medium')/SLA + vol_rameau_cat(x, 'medium')*densite_MS_rameaux
+    large_nb = lambda x: nb_leafy_rameau_cat(x, 'large')
+    large_dw = lambda x: la_rameau_cat(x, 'large')/SLA + vol_rameau_cat(x, 'large')*densite_MS_rameaux
+
+
+    if pf_type == 'all1':
+      pf1_nb = lambda x: small_nb(x) + medium_nb(x) + large_nb(x)
+      pf1_dw = lambda x: small_dw(x) + medium_dw(x) + large_dw(x)
+      pf2_nb = lambda x: 0
+      pf2_dw = lambda x: 0
+      pf3_nb = lambda x: 0
+      pf3_dw = lambda x: 0
+    elif pf_type == 'all2':
+      pf1_nb = lambda x: 0
+      pf1_dw = lambda x: 0
+      pf2_nb = lambda x: small_nb(x) + medium_nb(x) + large_nb(x)
+      pf2_dw = lambda x: small_dw(x) + medium_dw(x) + large_dw(x)
+      pf3_nb = lambda x: 0
+      pf3_dw = lambda x: 0
+    elif pf_type == 'all3':
+      pf1_nb = lambda x: 0
+      pf1_dw = lambda x: 0
+      pf2_nb = lambda x: 0
+      pf2_dw = lambda x: 0
+      pf3_nb = lambda x: small_nb(x) + medium_nb(x) + large_nb(x)
+      pf3_dw = lambda x: small_dw(x) + medium_dw(x) + large_dw(x)
+    else:
+      pf1_nb = small_nb
+      pf1_dw = small_dw
+      pf2_nb = medium_nb
+      pf2_dw = medium_dw
+      pf3_nb = large_nb
+      pf3_dw = large_dw
+      # dry weight is the sum of leaves dw woody part dw
+
+    ### Generate Rameaux mixte table
+
+    tab_rameauxmixte = [[names[x],
+                       vol_uc(x)*densite_MS_rameaux,
+                       fruit_nb(x),
+                       fruit_dw(x),
+                       pf1_nb(x),
+                       pf1_dw(x),
+                       pf2_nb(x),
+                       pf2_dw(x),
+                       pf3_nb(x),
+                       pf3_dw(x),
+                       Index(x),
+                       TMS_fruits,
+                       ] for x in ram_mixtes]
+ 
+    """
+    tab_rameauxmixte = [[names[x],
+                       vol_uc(x)*densite_MS_rameaux,
+                       fruit_nb(x),
+                       fruit_dw(x),
+                       nb_leafy_rameau_cat(x, 'small'),
+                       la_rameau_cat(x, 'small')/SLA + vol_rameau_cat(x, 'small')*densite_MS_rameaux,#MS feuilles + tiges des pousses feuillées
+                       nb_leafy_rameau_cat(x, 'medium'),
+                       la_rameau_cat(x, 'medium')/SLA + vol_rameau_cat(x, 'medium')*densite_MS_rameaux,#MS feuilles + tiges des pousses feuillées
+                       nb_leafy_rameau_cat(x, 'large'),
+                       la_rameau_cat(x, 'large')/SLA + vol_rameau_cat(x, 'large')*densite_MS_rameaux,#MS feuilles + tiges des pousses feuillées
+                       Index(x),
+                       TMS_fruits,
+                       ] for x in ram_mixtes]
+    """
+    #save(tab_rameauxmixte,'test2.csv')
+
 
     #=====================================#
     #   Generate info for arbre table     #
