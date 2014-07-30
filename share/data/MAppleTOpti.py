@@ -40,7 +40,7 @@ iniFile = 'MAppleT_Opti.ini'
 def main(argv):
 
   try:
-     opts, args = getopt.getopt(argv,"hspi:l:a:r:x:",["help","savesimu","pix","internodelenght=","leafarea=","branchingangle=","apexradius=","optidx="])
+     opts, args = getopt.getopt(argv,"hspi:l:a:r:g:x:",["help","savesimu","pix","internodelenght=","leafarea=","branchingangle=","apexradius=","randomseed=","optidx="])
   except getopt.GetoptError:
      print 'MAppleTOpti -h to get some help'
      sys.exit(2)
@@ -57,6 +57,7 @@ def main(argv):
   area      = 0.003 # max leaf area [m2]
   angle     = 45    # branching angle [degree]
   diameter  = 0.003 # radius of apex [m]
+  randomseed= 123456# seed for random number generator
   optidx    = 0     # idx of optimization experiment: 0 = None, -1 = created from variable ortherwise any #
 
   for opt, arg in opts:
@@ -68,6 +69,7 @@ def main(argv):
              \t max leaf area     = 0.003 [m2] \n \
              \t branching angle   = 45 [degree]\n \
              \t apex max radius   = 0.003 [m]  \n \
+             \t random seed       = 123546     \n \
              \t idx of optimization experiment is not set \n \
              unless below options are used :   \n \n \
              -s : will save the scene and simulation (similar to  --savesimu)\n \
@@ -76,6 +78,7 @@ def main(argv):
              -l : specify the maximum leaf area in [m2] (similar to --leafarea) \n \
              -a : specify the branching angle in [degree] (similar to --branchingangle) \n \
              -r : specify the maximum apex radius in [m] (similar to --apexradius) \n \
+             -g : specify the random seed to initialize random number serie (similar to --randomseed) \n \
              -x : specify the index to be used to identify experiment [0 and -1 are reserved values] (similar to --optidx) \n "
       sys.exit()
     elif opt in ('-s', "--savesimu"):
@@ -96,14 +99,17 @@ def main(argv):
     elif opt in ("-r", "--apexradius"):
       diameter = float(arg)
       print "Starting MAppleT with modified max apex radius to {0} [m]".format(arg)
+    elif opt in ("-g", "--randomseed"):
+      randomseed = int(arg)
+      print "Starting MAppleT with modified random seed set to {0}".format(arg)
     elif opt in ("-x", "--optidx"):
       optidx = int(arg)
       print "Starting MAppleT with modified experiment idx to {0}".format(arg)
    
-  launchOptions(savesimu, pix, length, area, angle, diameter, optidx)
+  launchOptions(savesimu, pix, length, area, angle, diameter, randomseed, optidx)
 
 
-def launchOptions(savesimu, pix, length, area, angle, diameter, optidx):
+def launchOptions(savesimu, pix, length, area, angle, diameter, randomseed, optidx):
   
   conf = ConfigParams(iniFile)
 
@@ -114,6 +120,7 @@ def launchOptions(savesimu, pix, length, area, angle, diameter, optidx):
   
   conf.output.savescene     = savesimu  # wether to save the scene and simulation
   conf.output.saveimage     = pix       # wether to take a picture of the scene
+  conf.general.seed         = randomseed# seed for random number generator
   conf.output.opti_idx      = optidx    # idx to identify the optimization experiment
 
   lsys = lpy.Lsystem(lsystemFile, {"options":conf})
