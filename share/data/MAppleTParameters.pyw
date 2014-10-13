@@ -145,6 +145,10 @@ class MyWindow(QtGui.QMainWindow):
     self.goAction = QtGui.QAction('&Go', self)
     self.goAction.setStatusTip("Start the model with the current settings.")
     self.connect(self.goAction, QtCore.SIGNAL('triggered()'), self.go)
+
+    self.killAction = QtGui.QAction('&Kill', self)
+    self.killAction.setStatusTip("Kil the running simulation.")
+    self.connect(self.killAction, QtCore.SIGNAL('triggered()'), self.kill)
         
     self.helpAction = QtGui.QAction('&Help', self)
     self.connect(self.helpAction, QtCore.SIGNAL('triggered()'), self.help)
@@ -157,6 +161,7 @@ class MyWindow(QtGui.QMainWindow):
     fileMenu.addAction(self.quitAction)
     
     self.menuBar().addAction(self.goAction)
+    self.menuBar().addAction(self.killAction)
     self.menuBar().addAction(self.helpAction)
 
   def loadSettings(self):
@@ -171,8 +176,13 @@ class MyWindow(QtGui.QMainWindow):
 
   def go(self):
 
+    self.updateConf('general', 'abort', False)
     self.lsys = lpy.Lsystem(self.confp.general.filename, {"options":self.confp, 'PostDraw':self.myPostDraw})
     self.lsys.animate()    
+
+  def kill(self):
+    #self.lsys.done() #stop simu but with Aborted (core dumped)
+    self.updateConf('general', 'abort', True)
 
   #May provide general and/or tab specific help later
   def help(self):

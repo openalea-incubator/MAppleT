@@ -505,11 +505,99 @@ def generate_sequence(obs, markov=None, year=0, second_year_draws=False,
     else:
         raise("ERROR: A bad sequence observation (%s) was passed to generate_sequence().\n" % obs)
 
-def generate_pruned_sequence(obs, rank, closest_apex, farthest_apex, sons_nb, markov=None, year=0 ):
+def generate_pruned_sequence(obs, react_pos, rank, closest_apex, farthest_apex, sons_nb, markov=None, year=0 ):
     #The pruned length is assimilated to the distance to the farthest apex
 
+    #obs is the shoot type of the prunned shoot
+    #react_pos is the position of the reacting apex from the cuting point [0,2]
+    #year is the year pruned shoot creation - start date year
+
+    #Determining the case of pruning reaction for the 3 react-pos
+    # A : Succession - Succession - lower Cat
+    # B : Reiteration - Succession - lower Cat
+    # C : Reiteration - Reiteration - Succession
+    
+    
     #Case of pruning a shoot w/o branching
     #Type of shoot is generated according to the pruned length
+    if closest_apex == farthest_apex:
+      #ratio of pruned over total length
+      pruned_ratio = 1.0*farthest_apex / (rank + farthest_apex)
+      if pruned_ratio < 0.25:
+        #case A
+        newobs = shoot_type_react(year,obs,'A', react_pos) 
+      elif pruned_ratio < 0.75:
+        #case B
+        newobs = shoot_type_react(year,obs,'B', react_pos) 
+      else:
+        #Case C
+        newobs = shoot_type_react(year,obs,'C', react_pos) 
+
+    #Case of pruning a shoot with branching
+    #Then depending on the pruned length and biomass represented by the sons_nb,
+    else:
+      #ratio of total biomass(sons_nb) over pruned length(farthest_apex)
+      bio_ratio = 1.0*sons_nb / farthest_apex
+      if bio_ratio < 2:
+        #case A
+        newobs = shoot_type_react(year,obs,'A', react_pos) 
+      if bio_ratio < 3:
+        #case B
+        newobs = shoot_type_react(year,obs,'B', react_pos) 
+      else:
+        #case C
+        newobs = shoot_type_react(year,obs,'C', react_pos) 
+
+    hsm_react_long, hsm_react_medium = pruned_hsmc(year, markov)
+
+    if newobs == 'trunk' or newobs == 'large' or newobs == 'sylleptic_large':
+      if farthest_apex > 30: 
+        return generate_bounded_hsm_sequence(hsm_react_long, 41, markov.maximum_length)
+      elif farthest_apex > 20:
+        return generate_bounded_hsm_sequence(hsm_react_long, 26, 41)
+      elif farthest_apex > 8:
+        return generate_bounded_hsm_sequence(hsm_react_long, 15, 26)
+      else:
+        return generate_bounded_hsm_sequence(hsm_react_medium,  5, 15);
+
+    elif newobs == 'medium'or newobs == 'sylleptic_medium':
+      if farthest_apex > 5:
+        return generate_bounded_hsm_sequence(hsm_react_long,  15, 26);
+      else:
+        return generate_bounded_hsm_sequence(hsm_react_medium,  5, 15);
+
+    elif newobs == 'small' or newobs == 'sylleptic_short':
+      return generate_short_sequence()
+
+    elif newobs == 'floral':
+      return generate_floral_sequence()
+
+def shoot_type_react(year, pruned_shoot_type, pruning_case, react_pos):
+  if pruned_shoot_type == 'trunk':
+    pruned_shoot_type = 'large'
+
+  reiteration = pruned_shoot_type
+  succession = terminal_fate(year, pruned_shoot_type)
+  lower_cat = terminal_fate(year,terminal_fate(year, pruned_shoot_type))
+
+  if react_pos == 0:
+    if pruning_case == 'A':
+      return succession
+    else:
+      return reiteration
+  elif react_pos == 1:
+    if pruning_case == 'C':
+      return reiteration
+    else:
+      return succession
+  elif react_pos == 2:
+    if pruning_case == 'C':
+      return succession
+    else:
+      return lower_cat
+
+
+"""
     if closest_apex == farthest_apex:
       if obs == 'trunk' or obs == 'large' or obs == 'sylleptic_large':
         #In case of pruned trunk, a large shoot will be generated
@@ -563,19 +651,20 @@ def generate_pruned_sequence(obs, rank, closest_apex, farthest_apex, sons_nb, ma
         return generate_short_sequence()
       elif obs == 'floral':
         return generate_floral_sequence()
+"""
 
 def pruned_hsmc(year, markov):
   """
   Return a long and a medium hsmc model from the year before the current one
   """
 
-  if year < 3:
+  if year in [0,1]:
       hsmc_medium = markov.hsm_medium1
       hsmc_long   = markov.hsm_long1
-  elif year == 3:
+  elif year == 2:
       hsmc_medium = markov.hsm_medium2
       hsmc_long   = markov.hsm_long2
-  elif year == 4:
+  elif year == 3:
       hsmc_medium = markov.hsm_medium3
       hsmc_long   = markov.hsm_long3
   else:

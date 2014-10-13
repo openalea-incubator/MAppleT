@@ -140,6 +140,9 @@ class metamer_data(object):
         self.closest_apex = 0                             # Distance to the closest apex
         self.farthest_apex = 0                            # Distance to the farthest apex
         self.sons_nb = 0                                  # Cumulated sum of metamer sons
+        self.pruning_react = True                        # wether the metamer could react to pruning
+        self.pruned_data = None                           # If metamer was below the pruning point, this will contain the data required to determine pruning reaction that will be passed on previous metamers (rankwise), i.e. reacting position from cutting point [0,2], closest_apex, farthest_apex, sons_nb
+
         self.observation = observation
         self.parent_observation = parent_observation      # Yield the shoot type of that metamer
         self.parent_unit_id = parent_unit_id

@@ -347,7 +347,7 @@ def EndEach(lstring,scene):
     #global current_experiment
 
     #if simulation.date > simulation.ending_date:
-    if simulation.date > datetime.datetime.strptime(options.general.end_year, "%Y-%m-%d"):
+    if simulation.date > datetime.datetime.strptime(options.general.end_year, "%Y-%m-%d") or options.general.abort:
         #pprint( 'The simulation has ended  %s %s\n' %  (options.general.end_year, simulation.date))
         Stop()
         End(lstring,scene)
@@ -881,7 +881,7 @@ apex(a):
       if a.from_pruning:
         if debug:
           print "####################### PRUNED APEX #############################"
-        a.sequence  = generate_pruned_sequence(obs=a.get_observation(), rank=a.rank, closest_apex=a.closest_apex, farthest_apex=a.farthest_apex, sons_nb=a.sons_nb, markov=markov, year=simulation.date.year )
+        a.sequence  = generate_pruned_sequence(obs=a.get_observation(), react_pos=a.react_pos, rank=a.rank, closest_apex=a.closest_apex, farthest_apex=a.farthest_apex, sons_nb=a.sons_nb, markov=markov, year=a.year - simulation.starting_date.year)
       else:
         a.sequence  = generate_sequence(a.get_observation(), \
                       markov, simulation.date.year - simulation.starting_date.year, \
@@ -1119,6 +1119,7 @@ group 5:
 
 #X < metamer(m) :
 metamer(m) > X :
+  #if not m.to_prune:
   if not m.cut and not m.to_prune:
     m.cut = True
     m.to_prune = True
@@ -1126,19 +1127,20 @@ metamer(m) > X :
   elif not m.cut and m.to_prune:
     m.to_prune = False
     produce metamer(m)
-  elif m.cut:
+  elif m.cut and m.to_prune:
     #produce Cut()
     m.cut = False
     m.to_prune = False
     #m.branching_angle = tree.floral_branching_angle
 
     # There will be prunig reaction only if cut is after rank 5, otherwise pruning is ment not to have reaction
-    if m.number > 4:
+    if m.number > 4 and m.pruning_react:
 
       new_br_angle, new_phyllo_angle = m.pruning_reaction_angle(tree.phyllotactic_angle)
       m.branching_angle = new_br_angle
       m.phyllotactic_angle = new_phyllo_angle
-
+      m.pruned_data = (0, m.closest_apex, m.farthest_apex, m.sons_nb)
+      m.pruning_react = False
 
       hlu = rotate_frame_at_branch(m.hlu, m.branching_angle, m.phyllotactic_angle);
 
@@ -1150,13 +1152,15 @@ metamer(m) > X :
       pruning_apex = apex_data(hlu, m.parent_observation, **apex_parameters)
       pruning_apex.from_pruning = True
       pruning_apex.rank = m.number
+      pruning_apex.year = m.year #new apex holds the same year as the originating metamer
+      pruning_apex.react_pos = 0
       pruning_apex.closest_apex = m.closest_apex
       pruning_apex.farthest_apex = m.farthest_apex
       pruning_apex.sons_nb = m.sons_nb
 
       if m.parent_fbr_id == 0:
         tree.first_branches +=1
-        #The parent_fbr_id ranges from 0 to tree.first_branches (rather than to tree.frist-branches-1)
+        #The parent_fbr_id ranges from 0 to tree.first_branches (rather than to tree.first-branches-1)
         #This is because, the trunk is regarded by branch 0 as default
         #Thus the id of the first real branch should be 1
         pruning_apex.parent_fbr_id = tree.first_branches
@@ -1173,8 +1177,9 @@ metamer(m) > X :
     else:
       produce Cut()
 
+#metamer(ml) SB() branch() metamer(mb) EB() << metamer(m):
 metamer(ml) SB() branch() << metamer(m):
-  if not ml.to_prune and not m.cut:
+  if not ml.to_prune and not m.cut: # why m.cut ? ml.cut instead ?
     m.to_prune = False    
   elif ml.to_prune:
     m.to_prune = True    
@@ -1195,12 +1200,79 @@ X:
 #===============================================================#
 group 6:
 
+#metamer(m) >> SB() branch() metamer(mr):
+metamer(m) >> SB() branch() metamer(mb) EB() metamer(mr):
+  if (not mr.to_prune or not mb.to_prune) and m.to_prune:
+    m.cut = False
+    m.to_prune = False
+
+  #pruning reaction are restricted to the pruned axis
+  if mr.pruned_data:
+    rpos, closest_apex, farthest_apex, sons_nb = mr.pruned_data
+    if rpos < 2:
+      #m.pruning_react = False
+      m.pruned_data = (rpos, closest_apex, farthest_apex, sons_nb)
+
+  produce metamer(m)
+  
+
 metamer(m) >> metamer(mr):
+  if mr.pruned_data:
+    rpos, closest_apex, farthest_apex, sons_nb = mr.pruned_data
+    if rpos < 2 and m.pruning_react:
+      #m.pruning_react = True #useless if reaction is done directly
+      m.pruned_data = (rpos+1, closest_apex, farthest_apex, sons_nb)
+
+      ############ Pruning reaction ###################
+      #new_br_angle, new_phyllo_angle = m.pruning_reaction_angle(tree.phyllotactic_angle)
+      #m.branching_angle = new_br_angle
+      m.pruning_react = False
+
+      #In the case of indirect reaction phylotactic angle is kept
+      #m.phyllotactic_angle = new_phyllo_angle
+      #m.pruning_react = True #reaction is done directly here
+
+      hlu = rotate_frame_at_branch(m.hlu, m.branching_angle, m.phyllotactic_angle);
+
+
+      if debug:
+        print("New reacting branch of type {0} at rank {1} and at {2} from closest apex and {3} from farthest apex".format(m.parent_observation, m.number, m.closest_apex, m.farthest_apex))
+        #print("New branching angle={0} and new phyllotactic angle={1}".format(new_br_angle, new_phyllo_angle))
+
+      pruning_apex = apex_data(hlu, m.parent_observation, **apex_parameters)
+      pruning_apex.from_pruning = True
+      pruning_apex.rank = m.number
+      pruning_apex.year = m.year #new apex holds the same year as the originating metamer
+      pruning_apex.react_pos = rpos+1
+      pruning_apex.closest_apex = m.closest_apex
+      pruning_apex.farthest_apex = m.farthest_apex
+      pruning_apex.sons_nb = m.sons_nb
+
+      if m.parent_fbr_id == 0:
+        tree.first_branches +=1
+        #The parent_fbr_id ranges from 0 to tree.first_branches (rather than to tree.first-branches-1)
+        #This is because, the trunk is regarded by branch 0 as default
+        #Thus the id of the first real branch should be 1
+        pruning_apex.parent_fbr_id = tree.first_branches
+      else:
+        pruning_apex.parent_fbr_id = m.parent_fbr_id
+
+      if debug:
+        agl = math.degrees(math.acos(pgl.dot(m.hlu.heading.normed(), pgl.Vector3(0,0,1))))
+        agl2 = math.degrees(math.acos(pgl.dot(pruning_apex.hlu.heading.normed(), pgl.Vector3(0,0,1))))
+        print "Producing pruning apex with heading {0} at {3} deg from vertical \n Origin metamer having heading {1}, at {2} deg from vertical".format(pruning_apex.hlu.heading, m.hlu.heading, agl, agl2)
+
+      produce metamer(m) SB() branch() apex(pruning_apex) EB()
+     
+      #################################################
+
+    else: #previous metamer was the last one to react
+      produce metamer(m)
+
   if not mr.to_prune and m.to_prune:
     m.cut = False
     m.to_prune = False
     produce metamer(m)
-
 
 #================== GROUP 7 : Write LString ====================#
 #===============================================================#

@@ -178,6 +178,7 @@ class apex_data(object):
         self.from_pruning = False
         #Information related to pruning reaction
         self.rank = 0
+        self.react_pos = 0
         self.closest_apex = 0
         self.farthest_apex = 0
         #the cumulated sum of metamers sons
