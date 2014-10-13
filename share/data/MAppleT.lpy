@@ -882,6 +882,8 @@ apex(a):
         if debug:
           print "####################### PRUNED APEX #############################"
         a.sequence  = generate_pruned_sequence(obs=a.get_observation(), react_pos=a.react_pos, rank=a.rank, closest_apex=a.closest_apex, farthest_apex=a.farthest_apex, sons_nb=a.sons_nb, markov=markov, year=a.year - simulation.starting_date.year)
+        a.from_pruning = False
+
       else:
         a.sequence  = generate_sequence(a.get_observation(), \
                       markov, simulation.date.year - simulation.starting_date.year, \
@@ -1141,6 +1143,7 @@ metamer(m) > X :
       m.phyllotactic_angle = new_phyllo_angle
       m.pruned_data = (0, m.closest_apex, m.farthest_apex, m.sons_nb)
       m.pruning_react = False
+      m.developed = True
 
       hlu = rotate_frame_at_branch(m.hlu, m.branching_angle, m.phyllotactic_angle);
 
@@ -1227,6 +1230,7 @@ metamer(m) >> metamer(mr):
       #new_br_angle, new_phyllo_angle = m.pruning_reaction_angle(tree.phyllotactic_angle)
       #m.branching_angle = new_br_angle
       m.pruning_react = False
+      m.developed = True
 
       #In the case of indirect reaction phylotactic angle is kept
       #m.phyllotactic_angle = new_phyllo_angle

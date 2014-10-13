@@ -573,27 +573,37 @@ def generate_pruned_sequence(obs, react_pos, rank, closest_apex, farthest_apex, 
       return generate_floral_sequence()
 
 def shoot_type_react(year, pruned_shoot_type, pruning_case, react_pos):
+
   if pruned_shoot_type == 'trunk':
     pruned_shoot_type = 'large'
-
-  reiteration = pruned_shoot_type
-  succession = terminal_fate(year, pruned_shoot_type)
-  lower_cat = terminal_fate(year,terminal_fate(year, pruned_shoot_type))
+    reiteration = 'large'
+    succession = 'large'
+    lower_cat = terminal_fate(year, pruned_shoot_type)
+  else:
+    reiteration = pruned_shoot_type
+    succession = terminal_fate(year, pruned_shoot_type)
+    lower_cat = terminal_fate(year,terminal_fate(year, pruned_shoot_type))
 
   if react_pos == 0:
     if pruning_case == 'A':
+      print("reaction at pos {0} in case {1} of type {2}".format(react_pos, pruning_case, succession))
       return succession
     else:
+      print("reaction at pos {0} in case {1} of type {2}".format(react_pos, pruning_case, reiteration))
       return reiteration
   elif react_pos == 1:
     if pruning_case == 'C':
+      print("reaction at pos {0} in case {1} of type {2}".format(react_pos, pruning_case, reiteration))
       return reiteration
     else:
+      print("reaction at pos {0} in case {1} of type {2}".format(react_pos, pruning_case, succession))
       return succession
   elif react_pos == 2:
     if pruning_case == 'C':
+      print("reaction at pos {0} in case {1} of type {2}".format(react_pos, pruning_case, succession))
       return succession
     else:
+      print("reaction at pos {0} in case {1} of type {2}".format(react_pos, pruning_case, lower_cat))
       return lower_cat
 
 
