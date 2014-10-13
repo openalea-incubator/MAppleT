@@ -741,7 +741,7 @@ metamer(ml) branch() << metamer(m) :
     #  m.hlu = optimisation.reorient_frame(hlu_init, m.rotation_velocity, m.length)
     m.update_position(ml.position)
     data.counts.update(m)
-    m.offset = 0.9 * ml.radius
+    #m.offset = 0.9 * ml.radius
     produce metamer(m)
 
 metamer(ml) << metamer(m):
