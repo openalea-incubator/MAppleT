@@ -1,3 +1,0 @@
-vplants.plantgl
-cython
-lockfile
