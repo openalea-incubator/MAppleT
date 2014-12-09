@@ -46,7 +46,7 @@ if __name__ == '__main__':
           zip_safe = False,
 
           # Dependencies
-          install_requires = ['vplants.plantgl', 'cython', 'lockfile'],
+          #install_requires = ['vplants.plantgl', 'cython', 'lockfile'],
           dependency_links = ['http://openalea.gforge.inria.fr/pi'],
           #cmdclass={'build_ext':build_ext},
           #ext_modules = ext_modules,
