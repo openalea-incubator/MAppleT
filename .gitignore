@@ -57,14 +57,7 @@ pip-log.txt
 nosetests.xml
 
 # Designer files
-*visualea/src/visualea/ui_*
-
-## ###################################################################
-##
-## ###################################################################
-
-oalab/src/openalea/oalab/control/designer/_editor.py
-oalab/share/data/project/tutorial_models/model/demo_WeberPenn.wpy
+#ui_*
 
 # Translations
 *.mo
