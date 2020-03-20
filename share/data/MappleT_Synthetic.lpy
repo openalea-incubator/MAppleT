@@ -1,0 +1,1831 @@
+#__revision__ = " $Id: stocatree.lpy 11526 2011-12-06 14:48:34Z liqihan $ "
+__revision__ = " $ Id: MAppleT.lpy 2014 DDS $ "
+
+# First, read the configuration file
+from openalea.plantik.tools.config import ConfigParams
+if "options" not in globals().keys():
+  print "Reading MAppleT.ini file myself, if not present...crash"
+  options = ConfigParams('MAppleT.ini')
+
+###### FIXING THE RANDOM SEED ##########################
+import random
+random.seed(int(options.general.seed))
+
+########################################################
+
+
+import time
+import os
+import os.path as op
+import math
+import datetime
+
+import cPickle
+
+import openalea.plantgl.all as pgl 
+
+from openalea.sequence_analysis import HiddenSemiMarkov
+
+try:
+    import openalea.stocatree.optimisation as optimisation
+except:
+    import openalea.stocatree.non_optimised as optimisation
+
+#import openalea.stocatree.non_optimised as nonopti
+
+import openalea.stocatree.constants as constants
+from openalea.stocatree.output import Data
+from openalea.stocatree.colors import Colors
+from openalea.stocatree.tree import Tree
+from openalea.stocatree.leaf import AppleLeaf
+from openalea.stocatree.fruit import AppleFruit
+from openalea.stocatree.wood import Wood
+from openalea.stocatree.internode import Internode
+from openalea.stocatree.apex import apex_data
+from openalea.stocatree.tools.simulation import SimulationStocatree
+from openalea.stocatree.sequences import Markov, generate_sequence, generate_pruned_sequence, terminal_fate
+from openalea.stocatree.metamer import metamer_data
+from openalea.stocatree.growth_unit import growth_unit_data
+from openalea.stocatree.physics import rotate_frame_at_branch, rupture
+from openalea.stocatree.tools.surface import leafSurface, petalSurface, groundSurface
+from openalea.stocatree import get_shared_data
+from openalea.stocatree.pipe import get_new_radius
+from openalea.stocatree.data_process import Group, Statistics
+from openalea.stocatree.temperature_effects import Tp_date
+from openalea.stocatree.srandom import boolean_event
+from openalea.stocatree.csv import ExprecCSV
+from openalea.stocatree.rw_tools import ensureLocalDir, Recorder
+from openalea.stocatree.export import export2qualitree
+
+
+# This is to use the scene to calculate the leaf area, silhouette area as well as STAR
+# based on size and number of pixels in plantgl
+#from openalea.stocatree.interception import STAR
+
+# Import the module for light interception (added by Han, 25-11-10)
+#from openalea.fractalysis.light.directLight import diffuseInterception
+from openalea.fractalysis.light import directLight as dl
+
+
+
+gravity = pgl.Vector3(0.0, 0.0, -9.81);  #// in m s^-2 original mappleT
+
+
+verbose = options.general.verbose
+debug = options.general.debug
+
+output_directory = options.general.output_dir
+ensureLocalDir(output_directory)
+
+# Initialise the simulation
+# This will be provided in case of a continued simulation
+simulation = SimulationStocatree(dt=options.general.time_step,
+  seed=options.general.seed,
+  starting_date=int(options.general.starting_year),
+  ending_date=options.general.end_year)
+
+#date = datetime.datetime.strptime(date, "%Y-%m-%d")
+#simulation.events.add_event('star', datetime.datetime.strptime(options.output.light_date, "%Y-%m-%d"), duration=datetime.timedelta(0), periodic=False)
+simulation.events.add_event('star', datetime.datetime.strptime(options.output.light_date, "%Y-%m-%d"), duration=datetime.timedelta(0), periodic=options.output.light_yearly)
+
+if options.qualitree.export:
+  simulation.events.add_event('qualitree_export', datetime.datetime.strptime(options.qualitree.date, "%Y-%m-%d"), duration=datetime.timedelta(0), periodic=options.qualitree.yearly)
+else:
+  simulation.events.add_event('qualitree_export', datetime.datetime(1,1,1), duration=datetime.timedelta(0), periodic=options.qualitree.yearly)
+
+if verbose:
+  print "The outputs will be saved in: ",output_directory
+
+# Then, define a data structure to store outputs such as MTG, shoots, sequences and so on
+# This will be provided in case of a continued simulation
+data = Data(options=options, init_date=simulation.date, directory=output_directory)
+
+
+
+# Read PGLshape surfaces
+stride = int(options.stocatree.stride_number)
+leaf_surface = leafSurface(stride, stride)
+ground_surface = groundSurface(stride, stride)
+petal_surface = petalSurface(stride, stride)
+
+# init markov and tree instances
+markov          = Markov(options.markov.maximum_length, options.markov.minimum_length)
+markov.hsm_medium1 = HiddenSemiMarkov(options.markov.hsm_medium1)
+markov.hsm_medium2 = HiddenSemiMarkov(options.markov.hsm_medium2)
+markov.hsm_medium3 = HiddenSemiMarkov(options.markov.hsm_medium3)
+markov.hsm_medium4 = HiddenSemiMarkov(options.markov.hsm_medium4)
+markov.hsm_long1 = HiddenSemiMarkov(options.markov.hsm_long1)
+markov.hsm_long2 = HiddenSemiMarkov(options.markov.hsm_long2)
+markov.hsm_long3 = HiddenSemiMarkov(options.markov.hsm_long3)
+markov.hsm_long4 = HiddenSemiMarkov(options.markov.hsm_long4)
+
+# The following objects (tree, wood, internode, apex_parameters, leaf, fruit
+# are used to store the user parameters and are used by the metamer_data
+# class to create new metamers.
+# tree is unique throughout the simulation, so only one instance is used
+#tree            = Tree(**options.tree.__dict__)
+# wood and internode are unique as well since they only contain parameters
+#wood            = Wood(**options.wood.__dict__)
+#internode       = Internode(**options.internode.__dict__)
+
+#!!! apices and leaves are specific to a metamer later on a deepcopy is used.
+
+apex_parameters = {'maximum_length':options.markov.maximum_length, 'minimum_length':options.markov.minimum_length}
+apex_parameters.update(options.apex.__dict__)
+#leaf_parameters = options.leaf.__dict__
+#fruit_parameters = options.fruit.__dict__
+
+# setup the colors once for all
+colors = Colors()
+
+#define the leaf area function once for all
+simulation.func_leaf_area_init(get_shared_data('functions.fset'))
+
+def saveDay():
+  """
+    Define when the output files should be generated, except for the light interception
+    When each month is True, then the save is done from May to October on the defined save_day, otherwise only on the save_month
+  """
+  if  simulation.date.day==options.output.save_day:
+    if options.output.each_month:
+      return 4 < simulation.date.month < 11
+    else:
+      return  simulation.date.month == options.output.save_month
+  return False
+
+###################################
+# DONT CHANGE ANYTHING HERE BELOW #
+###################################
+
+#define the group enumerate here 0 used for rendering. !! physics and update_parameters inverse on purpose
+initialisation    = 0
+update_parameters = 1
+physics           = 2
+statistics        = 3
+update_structure  = 4
+pruning_fw        = 5
+pruning_bw        = 6
+writelstring      = 7
+
+module apex(apex_data): scale=2
+module branch(): scale=1
+module growth_unit(growth_unit_data): scale=1
+module axiom()
+module metamer(metamer_data): scale=2
+module root(): scale=1
+
+numerical_resolution_counter = 0
+
+#define a unique id to identify the simulation
+global current_experiment
+
+
+if options.output.opti_idx == 0:
+  current_experiment = str(options.stocatree.select_trunk)
+elif options.output.opti_idx  == -1:
+  current_experiment =  '{4}_i{0}l{1}a{2}r{3}'.format(options.internode.max_length, options.leaf.max_area, options.tree.branching_angle, options.apex.maximum_size, options.stocatree.select_trunk)
+else:
+  current_experiment = str(options.output.opti_idx)
+
+if verbose:
+  print "Using trunk seq # {0}".format(options.stocatree.select_trunk)
+
+
+#The lenght of trunk sequence, added by Han on 06-07-2012
+trunk_len = 0
+#The defaul value of plastochron, added by Han on 06-07-2012
+default_plastochron = options.internode.plastochron
+
+#this is a list that will contain the content of the lstring for serialization purpose
+thestring = []
+
+starttime = time.time()
+
+def Start():
+    #The initialisations of tree, wood and internode were moved here by Han
+    #on 09-12-2011, to allow the correct configurations can be obtained from
+    #lpy.Lsystem("stocatree").context["options"]. If they are initialised as
+    #above rather than being here, the productions will simply use those
+    #configuraitons as defined in the "stocatree.ini" file.
+    global tree
+    global wood
+    global internode
+    tree            = Tree(**options.tree.__dict__)
+    wood            = Wood(**options.wood.__dict__)
+    internode       = Internode(**options.internode.__dict__)
+    leaf_parameters = options.leaf.__dict__
+    fruit_parameters = options.fruit.__dict__
+
+
+    if verbose:
+      print "Simulation seed:", simulation.seed
+
+    # init the data to store the required outputs (sequence, lstring, mtg, ...)
+    data.open_all(current_experiment)
+
+    # Trunk length is used to estimate the trunk phylocron to make it grow entirely during the vegetative period
+    global trunk_len
+    trunk_len = len(generate_sequence(obs='trunk',trunk_seq=options.stocatree.trunk_seq, select_trunk=int(options.stocatree.select_trunk)))
+
+    #file used to detect if simulation went through the STAR computation or crashed before
+    if options.output.light_interception:
+      f=open(op.join(output_directory, "STAR.csv"), 'w')
+      f.write("FALSE")
+      f.close()
+
+    #Variables to get the extension of the ground projected canopy
+    global can_x_max
+    global can_x_min
+    global can_y_max
+    global can_y_min
+    can_x_max=0
+    can_x_min=0
+    can_y_max=0
+    can_y_min=0
+
+def StartEach():
+
+    #if simulation.phase == update_structure and ( (simulation.date.day % options.stocatree.dt_biomeca == 0 and numerical_resolution_counter == 1) or numerical_resolution_counter == 0):
+    if( (simulation.phase == update_structure and numerical_resolution_counter == 0) or simulation.phase == pruning_fw or simulation.phase == pruning_bw):
+      frameDisplay(True)
+    else:
+      frameDisplay(False)
+    #frameDisplay(False)
+    
+    if simulation.phase == update_parameters:
+      data.counts.reset()
+
+    simyear = simulation.date.year - simulation.starting_date.year
+    if simyear in [0,1]:
+        markov.hsm_medium = markov.hsm_medium1
+        markov.hsm_long   = markov.hsm_long1
+    elif simyear == 2:
+        markov.hsm_medium = markov.hsm_medium2
+        markov.hsm_long   = markov.hsm_long2
+    elif simyear == 3:
+        markov.hsm_medium = markov.hsm_medium3
+        markov.hsm_long   = markov.hsm_long3
+    else:
+        markov.hsm_medium = markov.hsm_medium4
+        markov.hsm_long   = markov.hsm_long4
+
+
+    if simulation.phase == writelstring:
+      # Make sure thestring is empty
+      global thestring
+      thestring = []
+
+    #Added by Han in December 2010
+    global bud_date
+    global bud_break
+
+    #Added by Han on 16-05-2012, as a flag for annual pause/stop of growth
+    global growth_pause
+
+    #Added by Han on 29-05-2012, to allow the sylleptic growth at the first year
+    global sylleptic_year
+
+    #Added by Han in May 2011
+    if options.temperature.temperature_effect == True:
+      #This is used to calculate, at the beginning of each year, the date for bud break in this year
+      #Note that the year for onset of chilling effect should be one year earlier than options.starting_year
+      if simulation.date.month == 1 and simulation.date.day == 1:
+        tp_dt = Tp_date(onset_year = simulation.date.year,
+                          optimal_temperature = options.temperature.optimal_temperature,
+                          chilling_effect_interval = options.temperature.chilling_effect_interval,
+                          chilling_effect_onset_month = options.temperature.chilling_effect_onset_month,
+                          chilling_effect_onset_day = options.temperature.chilling_effect_onset_day,
+                          chilling_quantity_required = options.temperature.chilling_quantity_required,
+                          characteristic_temperature = options.temperature.characteristic_temperature,
+                          heat_sigmoidal = options.temperature.heat_sigmoidal,
+                          sigmoidal_slope = options.temperature.sigmoidal_slope,
+                          heat_quantity_required = options.temperature.heat_quantity_required)
+
+        bud_date = datetime.datetime(*tp_dt.bud_break()) # * is required because bud_break() returns a tuple
+      #if simulation.date.year == bud_date.year and simulation.date.month == bud_date.month and simulation.date.day == bud_date.day:
+      #if simulation.date >= bud_date and simulation.date <= bud_date + datetime.timedelta(1):
+      if simulation.date == bud_date:
+        bud_break = True
+      else:
+        bud_break = False
+    #If the temperature effect is off, the previous method developed by Cokelaer will be used for calculating bud break date
+    else:
+      bud_break = simulation.events.bud_break.active
+
+    #Added by Han on 16-05-2012
+    if simulation.date.month >= options.general.pause_month:
+        if simulation.date.day >= options.general.pause_day:
+            growth_pause = True
+        else:
+            growth_pause = False
+    else:
+        growth_pause = False
+
+    growth_days = 0
+    #Added by Han on 29-05-2012
+    if simulation.date.year == 1994:
+        sylleptic_year = True
+        #Added by Han on 06-07-2012, to update the plastochron if necessary
+        growth_duration = datetime.datetime(1994, int(options.general.pause_month), int(options.general.pause_day)) - datetime.datetime(bud_date.year, bud_date.month, bud_date.day)
+        growth_days = growth_duration.days
+        new_plastochron = int(math.floor(growth_days/trunk_len))
+
+        #if new_plastochron < options.internode.plastochron:
+        if new_plastochron < default_plastochron:
+            options.internode.plastochron = new_plastochron
+            internode = Internode(**options.internode.__dict__)
+    else:
+        #Added by Han on 06-07-2012, to set plastochron with its default value
+        #if the year is not the sylleptic year
+        options.internode.plastochron = default_plastochron
+        internode = Internode(**options.internode.__dict__)
+        sylleptic_year = False
+
+
+def EndEach(lstring,scene):
+
+    #global current_experiment
+
+    #if simulation.date > simulation.ending_date:
+    if simulation.date > datetime.datetime.strptime(options.general.end_year, "%Y-%m-%d") or options.general.abort:
+        #pprint( 'The simulation has ended  %s %s\n' %  (options.general.end_year, simulation.date))
+        Stop()
+        End(lstring,scene)
+
+
+    # This switch controls the selection of which group of
+    # productions to apply.  The general sequence is:
+    #  initialisation --> update parameters --> output (L-string or MTG) --> physics --> statistics --> update structure --> update parameters --> ...
+    # Rendering happens after 'update parameters'.  'output' is only
+    # called conditionally; mostly, the simulation goes straight from
+    # 'output parameters' to 'physics'
+
+    if options.general.pruning:
+      if simulation.phase == pruning_fw:
+        useGroup(pruning_bw)
+        simulation.phase = pruning_bw
+        backward()
+      else:
+        useGroup(pruning_fw)
+        simulation.phase = pruning_fw
+        forward()
+    else:
+        if simulation.phase == initialisation or simulation.phase == pruning_bw or simulation.phase == pruning_fw :
+            useGroup(update_parameters)
+            simulation.phase = update_parameters
+            forward()
+            #frameDisplay(False)
+
+        elif simulation.phase == update_parameters:
+            """
+            global numerical_resolution_counter
+            numerical_resolution_counter += 1
+            if numerical_resolution_counter < simulation.rotation_convergence.steps:
+                simulation.dt = 0.0 # days
+                frameDisplay(False)
+                #jump to the physics phase
+            else:
+                simulation.dt = simulation.base_dt
+                numerical_resolution_counter = 0
+
+
+            newyear = simulation.advance()
+
+
+            #useGroup(physics)
+            #simulation.phase = physics
+            #backward()
+
+            if simulation.date.day % options.stocatree.dt_biomeca == 0:  
+              useGroup(physics)
+              simulation.phase = physics
+              backward()
+            else:
+              useGroup(statistics)
+              simulation.phase = statistics
+              forward()
+              frameDisplay(True)
+            """
+
+            newyear = simulation.advance()
+            if simulation.date.day % options.stocatree.dt_biomeca == 0:  
+              global numerical_resolution_counter
+              numerical_resolution_counter += 1
+              useGroup(physics)
+              simulation.phase = physics
+              #frameDisplay(False)
+              backward()
+
+              if numerical_resolution_counter < simulation.rotation_convergence.steps:
+                simulation.dt = 0.0 # days
+              else:
+                simulation.dt = simulation.base_dt
+                numerical_resolution_counter = 0
+                
+            else:
+              useGroup(statistics)
+              simulation.phase = statistics
+              #frameDisplay(False)
+              forward()
+
+
+        elif simulation.phase == physics:
+            useGroup(statistics)
+            simulation.phase = statistics
+            forward()
+            #frameDisplay(False)
+        elif simulation.phase == statistics:
+            useGroup(update_structure)
+            simulation.phase = update_structure
+            #if simulation.date.day % options.stocatree.dt_biomeca == 0:  
+            #frameDisplay(False)
+            #if numerical_resolution_counter != 0:
+            #  print('NOT DISPLAYING FRAME - {}'.format(numerical_resolution_counter))
+            #  frameDisplay(False)
+        elif simulation.phase == update_structure:
+
+          ###########################################################################
+          # we updated the structure, it can now be saved or harvested or light     #
+          # interception can be computed                                            #
+          ###########################################################################
+
+          #Harvesting
+          if simulation.events.harvest.active:
+            tree.fruits_harvested = tree.fruits
+            tree.fruits = 0
+            simulation.harvested = True
+
+          # Pix of the tree to make movie, zoom lock should be disabled
+          if options.stocatree.movie and numerical_resolution_counter == 0:
+            print 'should save stocatree_output%05d.png' % getIterationNb()
+            #pgl.Viewer.frameGL.saveImage('stocatree_output%05d.png' % getIterationNb(), 'png')
+
+          #-------------------------------------------------------------------------#
+
+          #if numerical_resolution_counter == 1 and simulation.date == datetime.datetime.strptime(options.output.light_date, "%Y-%m-%d"):
+          if numerical_resolution_counter == 0 and options.output.light_interception and simulation.events.star.active:
+            #-----------------------------------------------------------------------#
+            #                        Light Interception                             #
+            #-----------------------------------------------------------------------#
+
+              sky = dl.sd.skyTurtle()
+              wgsum = math.fsum([sky[i][2] for i in range(len(sky))])
+              newwg = [sky[i][2]*math.sin(math.radians(sky[i][1])) for i in range(len(sky))]
+              newpos = [(sky[i][0], sky[i][1], newwg[i]) for i in range(len(sky))]
+              newwg2 = [sky[i][2]/wgsum for i in range(len(sky))]
+              newpos2 = [(sky[i][0], sky[i][1], newwg2[i]) for i in range(len(sky))]
+
+              sub_dir = op.join(output_directory, "{0}_{1}".format(simulation.date.year, simulation.date.month ) )
+              ensureLocalDir(sub_dir)
+
+              #Record the view of the camera to get back to it after light interception
+              pos, head, up = pgl.Viewer.camera.getPosition()
+
+              lvs = pgl.Scene([ sh for sh in scene if sh.appearance.getName() == "Color_15"])
+
+              # Actual version used by Victor for optimization
+              #star = dl.myStar(lvs, directions=newpos, w=300, h=300, dfact=4)
+
+              STAR, iPEA, TLA = dl.decomposedSTAR(lvs, directions=newpos2, w=300, h=300, dfact=4)
+              
+              # Used for FSPM and EM
+              #star = dl.myStar(lvs, directions=newpos, w=300, h=300, dfact=4) * 2
+              # Probably correct coefficient to add up to 1
+              #star = dl.myStar(lvs, directions=newpos2, w=300, h=300, dfact=4)
+              # Used in DaSi08
+              #star = dl.myStar(lvs, w=300, h=300, dfact=4)
+              headers = "STAR, iPEA, TLA\n"
+              vals = "{0}, {1}, {2} \n".format(STAR,iPEA, TLA)
+    
+              f=open(op.join(output_directory, "STAR.csv"), 'w')
+              f.write(headers)
+              f.write(vals)
+              f.close()
+
+              if verbose:
+                print "Writing STAR value computed: ", STAR
+
+              #Going back to the previous camera view
+              pgl.Viewer.frameGL.setSize(600,600)
+              pgl.Viewer.animation( False )
+              pgl.Viewer.camera.lookAt(pos, head)
+              
+              stf = open( op.join(sub_dir, current_experiment+".star"), "w")
+              stf.write(headers)
+              stf.write(vals)
+              stf.close()
+
+          #-------------------------------------------------------------------------#
+          #             Export required data to be used in  QualiTree               #
+          #-------------------------------------------------------------------------#
+
+          if numerical_resolution_counter == 0 and simulation.events.qualitree_export.active:
+            sub_dir = op.join(output_directory, "{0}_{1}".format(simulation.date.year, simulation.date.month ), options.qualitree.prefix )
+            
+            #MTG is required so generating one for that specific purpose
+            ensureLocalDir(sub_dir)
+            data.mtg.build_filename(directory=sub_dir, tag="{0}_{1}".format(current_experiment, options.general.tag)) 
+            data.mtg.openfile()
+
+            if verbose:
+              print "Exporting MTG for QualiTree as: ", data.mtg.filename
+            data.mtg.save(lstring, simulation.date, tree.trunk_radius)
+            data.mtg.close()
+            #Then the 3D scene containing only the leaves is also required
+            lvs = pgl.Scene([ sh for sh in scene if sh.appearance.getName() == "Color_15"])
+
+            export2qualitree(save_pth = sub_dir, mtg_file_path = data.mtg.filename, leaf_scene = lvs, nom_arbre = "MAppleT_"+options.qualitree.name_suffix, date = options.qualitree.date, variete = options.qualitree.variety , SLA = options.qualitree.sla, densite_MS_rameaux = options.qualitree.specific_weight, TMS_fruits = options.qualitree.fruit_dwc, SR = options.qualitree.shoot_root_ratio, userEllipse=True)
+            
+
+          #-------------------------------------------------------------------------#
+          #                     Saving to be done every day                         #
+          #-------------------------------------------------------------------------#
+    
+          if numerical_resolution_counter == 0 :
+            # Trunk data 
+            if options.output.trunk:
+              data.trunk.save(simulation.date, tree.trunk_radius,tree.trunk_cross_sectional_area)
+
+            # Counts data
+            if options.output.counts:
+              data.counts.save(simulation.date)
+
+
+          #-------------------------------------------------------------------------#
+          #                 Saving to be done at the end of the year                #
+          #-------------------------------------------------------------------------#
+
+          if numerical_resolution_counter == 0 and simulation.date.month == 12 and simulation.date.day == 31:
+ 
+            # save the count of shoots per length type
+            if options.output.shoots :
+              #print data.shoots
+              data.shoots.save(simulation.date)
+              data.shoots.reset()
+
+
+          #-------------------------------------------------------------------------#
+          #                 Saving to be done on specific date                      #
+          #-------------------------------------------------------------------------#
+
+
+          if numerical_resolution_counter == 0 and saveDay(): 
+            # means the iteration process for physics just made its second round, should be done
+            # saveDay returns true for everymonth from 5 to 10 if each_month output option is 
+            # activated or else for the output save_month and on the defined save_day 
+
+            sub_dir = op.join(output_directory, "{0}_{1}".format(simulation.date.year, simulation.date.month ) )
+
+            #Output of MTG
+            if options.output.mtg :
+              ensureLocalDir(sub_dir)
+              data.mtg.build_filename(directory=sub_dir, tag="{0}_{1}".format(current_experiment, options.general.tag)) 
+              #data.mtg.init()
+              data.mtg.openfile()
+              if verbose:
+                print "Saving MTG as: ", data.mtg.filename
+              data.mtg.save(lstring, simulation.date, tree.trunk_radius)
+              data.mtg.close()
+            # snapshot of the scene
+            if options.output.saveimage :
+              ensureLocalDir(sub_dir)
+              pgl.Viewer.saveSnapshot(op.join(sub_dir, current_experiment + '.png') )
+
+            # save the scene
+            if options.output.savescene :
+              ensureLocalDir(sub_dir)
+              s = scene
+              # s.save(op.join(sub_dir, current_experiment + '.bgeom'))
+              # Only for 
+              s.save(op.join(sub_dir, options.general.output_filename + '.bgeom'))
+
+              useGroup(writelstring)
+              simulation.phase = writelstring
+              #frameDisplay(False)
+
+            else:
+              useGroup(update_parameters)
+              simulation.phase = update_parameters
+              #frameDisplay(False)
+
+          else:
+
+            useGroup(update_parameters)
+            simulation.phase = update_parameters
+            #frameDisplay(False)
+
+
+        elif simulation.phase == writelstring:
+          #Save the simulation state, temporarily done every saveDay
+          sub_dir = op.join(output_directory, "{0}_{1}".format(simulation.date.year, simulation.date.month ) )
+          ensureLocalDir(sub_dir)
+
+          data.close_all()
+          simulation.load_save(thestring, data, tree, bud_break)
+          simufile = op.join(sub_dir, current_experiment + '.simu') 
+          f = open(simufile, 'w')
+          cPickle.dump(simulation, f)
+          simulation.unload_save()
+          f.close()
+          data.open_all(current_experiment)
+              
+          useGroup(update_parameters)
+          simulation.phase = update_parameters
+          #frameDisplay(False)
+
+        else:
+            ValueError('must not enter here')
+
+
+
+def End(lstring,scene):
+
+    global data
+    data.close_all()
+
+    endtime = time.time() - starttime
+    if verbose:
+      print("Simulation duration: {0}".format(endtime))
+
+    if options.stocatree.movie is True:
+        from openalea.plantik.tools.movies import create_movie
+        create_movie(input_glob='stocatree*png', output_filename='stocatree')
+
+        #Added by Han on 23-05-2011
+        # to prevent one processor from using wrong information that should belong to another processor
+    ###    r.clear()
+
+        #Record the id of the experiment that has been successfully finished
+        sc = Recorder(output_directory + "exp_successful.h")
+        sc.write(current_experiment)
+
+
+derivation length: int(options.general.max_iterations)
+
+
+Axiom: axiom()
+
+ignore: growth_unit
+
+production:
+
+# The L-system starts with this group.  If there were any errors
+# in the initialisations in Start, pruduce an error message;
+# otherwise, start the simulation.
+
+group 0:
+
+axiom():
+
+  if options.general.load_simu:
+    global simulation
+    global data
+    global tree
+    global bud_break
+    try:
+      f=open(options.general.saved_simu, 'r')
+      simulation = cPickle.load(f)
+      f.close()
+      data = simulation.data
+      tree = simulation.tree
+      bud_break = simulation.bud_break
+
+      for l in simulation.lstring:
+        if isinstance(l,str):
+          if l == 'root':
+            nproduce root()
+          elif l == 'branch':
+            nproduce branch()
+          elif l == 'sb':
+            nproduce SB()
+          elif l == 'eb':
+            nproduce EB()
+          
+        elif isinstance(l,metamer_data):
+          nproduce metamer(l)
+        elif isinstance(l,apex_data):
+          nproduce apex(l)
+        elif isinstance(l,growth_unit_data):
+          nproduce growth_unit(l)
+
+
+      simulation.unload_save()
+
+      produce
+    except:
+      print "Failed to load simulation, starting from scratch"
+      a = apex_data(tree.initial_hlu, 'trunk', **apex_parameters)
+      produce  root() apex(a)
+
+  else:
+    a = apex_data(tree.initial_hlu, 'trunk', **apex_parameters)
+    produce  root() apex(a)
+
+
+#================= GROUP 1 : Update parameters =================#
+# Update the parameters of each metamer:                        #
+# age, reaction wood, organs, length, rigidity & shape memory   #
+# and perform the geometric reconstruction rotation and         #
+# placement of each metamer                                     #
+#===============================================================#
+
+group 1:
+
+metamer(ml) branch() << metamer(m) :
+    m.update_metamer_parameters(simulation)
+    m.organ_activity(simulation)
+    if options.stocatree.mechanics:
+      m.hlu = rotate_frame_at_branch(ml.hlu, ml.branching_angle,  ml.phyllotactic_angle);
+      m.hlu = optimisation.reorient_frame(m.hlu, m.rotation_velocity, m.rv_norm, m.length)
+      #m.hlu = nonopti.reorient_frame(m.hlu, m.rotation_velocity, m.rv_norm, m.length)
+    #if simulation.date.day % 7 == 0 and options.stocatree.mechanics:  
+    #  hlu_init = rotate_frame_at_branch(ml.hlu, ml.branching_angle,  ml.phyllotactic_angle);
+    #  m.hlu = optimisation.reorient_frame(hlu_init, m.rotation_velocity, m.length)
+    m.update_position(ml.position)
+    data.counts.update(m)
+    #m.offset = 0.9 * ml.radius
+    produce metamer(m)
+
+metamer(ml) << metamer(m):
+
+    m.update_metamer_parameters(simulation)
+    m.organ_activity(simulation)
+
+    if options.stocatree.mechanics:
+        m.hlu = optimisation.reorient_frame(ml.hlu, m.rotation_velocity, m.rv_norm, m.length)
+        #m.hlu = nonopti.reorient_frame(ml.hlu, m.rotation_velocity, m.rv_norm, m.length)
+
+    m.update_position(ml.position)
+    data.counts.update(m)
+    produce metamer(m)
+
+metamer(m):
+    m.update_metamer_parameters(simulation)
+    m.organ_activity(simulation)
+    m.update_position()
+    data.counts.update(m)
+    produce metamer(m)
+
+
+#====================== GROUP 2 : Physics ======================#
+# Calculate the width (by the pipe model), cumulated mass,      #
+# cumulated torque and rotation velocity of each metamer        #
+#===============================================================#
+
+group 2:
+
+root() >> metamer(m):
+    tree.trunk_radius = m.radius
+    tree.trunk_cross_sectional_area = constants.pi * m.radius * m.radius
+    tree.fruit_load = tree.fruits / tree.trunk_cross_sectional_area
+
+metamer(m) >> SB() branch() metamer(mb) EB() metamer(mr):
+    # update radius
+    radius = optimisation.get_new_radius(mb.radius, mr.radius)
+    # update distance from apex
+    m.closest_apex = min(mb.closest_apex, mr.closest_apex) + 1
+    m.farthest_apex = max(mb.farthest_apex, mr.farthest_apex) + 1
+    m.sons_nb = mb.sons_nb + mr.sons_nb
+
+    if m.leaf.state=='growing':
+        radius = optimisation.get_new_radius(radius, m.leaf.petiole_radius)
+    m.radius = optimisation.max(radius, m.radius) #why redefinition in optimisation of already existing max function ?
+
+    #update last layer thickness
+    m.layers[-1].thickness = m.radius - m.layers[-1].radius
+
+    #update mass for bending estimation   
+    m.compute_mass(mr, mb)
+
+    #cumulated torque cumulate mass must be in kg
+    if options.stocatree.mechanics:
+      m.cumulated_torque =  mb.cumulated_torque + mr.cumulated_torque + \
+         pgl.cross((mb.hlu.heading * mb.length), (gravity * mb.cumulated_mass)) \
+         + pgl.cross((mr.hlu.heading * mr.length), (gravity * mr.cumulated_mass))\
+         + pgl.cross((m.hlu.heading * m.length) , tree.tropism)
+      m.calculate_rotation_velocity(simulation, options.stocatree.stake)
+    produce metamer(m)
+
+metamer(m) >> metamer(mr):
+    # update radius
+    radius = mr.radius
+    # update distance from apex
+    m.closest_apex = mr.closest_apex + 1
+    m.farthest_apex = mr.farthest_apex + 1
+    m.sons_nb = mr.sons_nb + 1
+
+    if m.leaf.state == 'growing':
+        radius = optimisation.get_new_radius(mr.radius, m.leaf.petiole_radius)
+    m.radius = optimisation.max(radius, m.radius)
+    m.layers[-1].thickness = m.radius - m.layers[-1].radius
+    m.compute_mass(mr)
+    if options.stocatree.mechanics:
+      m.cumulated_torque \
+        = pgl.cross((mr.hlu.heading * mr.length), (gravity * mr.cumulated_mass))\
+        + mr.cumulated_torque \
+        + pgl.cross((m.hlu.heading * m.length) , tree.tropism)
+      m.calculate_rotation_velocity(simulation, options.stocatree.stake)
+    produce metamer(m)
+
+metamer(m) >> apex(a):
+    # wood.density, m.fruit_mass  aer units objects
+    # update radius
+    radius = a.radius
+    # update distance from apex
+    m.closest_apex = 0
+    m.farthest_apex = 0
+    m.sons_nb = 0
+
+    if m.leaf.state=='growing':
+        radius = optimisation.get_new_radius(a.radius, m.leaf.petiole_radius)
+    m.radius = optimisation.max(radius, m.radius);
+    m.layers[-1].thickness = m.radius - m.layers[-1].radius
+    m.compute_mass()
+    m.cumulated_torque = pgl.cross( m.hlu.heading * m.length , tree.tropism)
+    if options.stocatree.mechanics:
+        m.calculate_rotation_velocity(simulation, options.stocatree.stake)
+    produce metamer(m)
+
+apex(a):
+    if (a.sequence_position == 0 and a.radius < a.target_radius):
+        a.terminal_expansion(simulation.dt.days)
+    produce apex(a)
+
+
+
+#==================== GROUP 3 : Statistics =====================#
+# Generate new sequences from HSMC models                       #
+#===============================================================#
+
+group 3:
+
+apex(a):
+
+    #if(a.sequence_position == 0 and a.get_observation()!='dormant' and \
+    #   (a.parent_observation == 'floral' or bud_break or \
+    #   (sylleptic_year and a.year < simulation.date.year and (a.get_observation() == 'small' or a.get_observation() == 'medium' or a.get_observation() == 'large')))):
+    if(a.sequence_position == 0 and a.get_observation()!='dormant' and (a.sylleptic or bud_break) ):
+      #if debug:
+      #  print("Group 3: New sequence of type {0} from parent_obs {2} @ {1} (syll={3})".format(a._observation, simulation.date, a.parent_observation, a.sylleptic))
+      a.parent_observation = a.get_observation()
+
+      #Added by Han on 15-05-2012
+      if a.parent_observation == 'sylleptic_small':
+          a.parent_observation = 'small'
+          a.set_observation('small')
+      elif a.parent_observation == 'sylleptic_medium':
+          a.parent_observation = 'medium'
+          a.set_observation('medium')
+      elif a.parent_observation == 'sylleptic_large':
+          a.parent_observation = 'large'
+          a.set_observation('large')
+
+      if a.from_pruning:
+        if debug:
+          print "####################### PRUNED APEX #############################"
+        a.sequence  = generate_pruned_sequence(obs=a.get_observation(), react_pos=a.react_pos, rank=a.rank, closest_apex=a.closest_apex, farthest_apex=a.farthest_apex, sons_nb=a.sons_nb, markov=markov, year=a.year - simulation.starting_date.year)
+        a.from_pruning = False
+
+      else:
+        a.sequence  = generate_sequence(a.get_observation(), \
+                      markov, simulation.date.year - simulation.starting_date.year, \
+                      options.stocatree.second_year_draws, \
+                      trunk_seq=options.stocatree.trunk_seq, \
+                      select_trunk=int(options.stocatree.select_trunk))
+      
+      a.sequence_position = len(a.sequence)
+      if (a.get_observation()=='trunk'):
+          a.set_observation('large')
+      elif (a.get_observation()=='small' and boolean_event(tree.spur_death_probability)):
+          a.set_observation('dormant')
+      elif (a.get_observation()=='floral'):
+          a.set_observation('dormant')
+      else:
+          a.set_observation(terminal_fate(simulation.date.year - simulation.starting_date.year, \
+                            a.get_observation()))
+
+
+      a.radius = 0
+      a.max_terminal_radius_target()
+
+      #CHANGES tree.growth_units
+      #record the unit id that this apex belongs to (the id values start from 0)
+      a.parent_unit_id = tree.growth_units
+      tree.growth_units += 1
+      if debug:
+        print "This is shoot {0} of length {1}".format(a.parent_unit_id, a.sequence_position)
+
+      #update shoots
+      if options.output.shoots:
+          if a.parent_observation=='floral':
+              data.shoots.florals+=1
+          elif a.parent_observation == 'small':
+              data.shoots.shorts+=1
+          elif a.parent_observation == 'medium':
+              data.shoots.mediums+=1
+          elif a.parent_observation == 'large':
+              data.shoots.longs += 1
+              if (a.sequence_position < 26):
+                  data.shoots.len_16_to_25 +=1
+              elif (a.sequence_position < 41):
+                  data.shoots.len_26_to_40+=1
+              else:
+                  data.shoots.len_over_40+=1
+
+
+      # save sequences into output data except for florals and trunk
+      if (options.output.sequences and (simulation.date.year - simulation.starting_date.year) < 5 and (a.parent_observation in ['large', 'medium', 'small'])):
+        data.sequences.save(a.sequence, a.sequence_position)
+
+      #Added by Han on 29-05-2012
+      #Note that a.year was initially smaller than simulation.date.year
+      #Once a growth unit is finished, a.year will be set as the same
+      #This is to avoid the production of two growth units at the same axis
+      #at the same year
+      a.year = simulation.date.year
+
+      nproduce growth_unit(growth_unit_data(tree.growth_units, simulation.date.year, a.parent_observation == 'floral')) apex(a)
+
+    else:
+        produce apex(a)
+
+#================= GROUP 4 : Update Structure ==================#
+# Add new terminal and lateral apices and metamers              #
+#===============================================================#
+
+group 4:
+
+metamer(m) < apex(a):
+    # if plastochron is reached, we produce a new metamer
+    #if (a.sequence_position > 0 and m.age >= m.internode._plastochron):
+    #Modified by Han on 12-07-2012 (Since the internode._plastochron is never changed in the internode module, the "options.internode.plastochron" could be used directly here)
+    if (a.sequence_position > 0 and m.age >= options.internode.plastochron):
+        a.sequence_position-=1
+        
+        if a.sequence_position == 0:
+          a.sylleptic = False
+
+
+        flower = (a.sequence_position == 0 and a.parent_observation=='floral')
+
+        #If metamer m was also produced by the same apex, i.e. its year == simulation.year, then increase metamer number
+        if m.year == simulation.date.year:
+            number = m.number + 1
+        else:
+            number = 1
+
+        ##The following lines were added by Han on 01-03-2012, to allow the leaf
+        ##and fruit parameters to be updated according to the re-definition outside lpy
+        ##(in parasuper_pc.py) instead of using the ini file.
+        leaf_parameters = options.leaf.__dict__
+        fruit_parameters = options.fruit.__dict__
+
+        mn = metamer_data(floral=flower, number=number, hlu=a.hlu,
+          zone=a.sequence[a.sequence_position][0], observation=a.get_observation_from_sequence(),
+                      parent_observation=a.parent_observation, parent_unit_id=a.parent_unit_id, parent_fbr_id=a.parent_fbr_id, parent_tree_id=a.parent_tree_id,
+                      p_angle=(m.phyllotactic_angle + tree.phyllotactic_angle),
+                      b_angle=tree.branching_angle, wood=wood, internode=internode,
+                      fruit=AppleFruit(**fruit_parameters), leaf=AppleLeaf(**leaf_parameters))
+        mn.trunk = a.trunk
+        mn.year = simulation.date.year
+
+        #Added by Han on 11-07-2012
+        mn.sylleptic = a.sylleptic
+
+        #produce metamer(mn) apex(a)
+        #Modified by Han on 16-05-2012
+        if not growth_pause:
+            produce metamer(mn) apex(a)
+        else:
+            a.sequence_position = 0
+            produce apex(a)
+    else:
+        produce apex(a)
+
+
+#Case of the first metamer of a new GU
+apex(a):
+
+    if (a.sequence_position > 0):
+        a.sequence_position -= 1
+        branching_angle = tree.branching_angle;
+        flower = (a.sequence_position == 0 and a.parent_observation=='floral')
+        #TODO check first and second index of a.sequence versus lsystem.l code
+
+        ##The following lines were added by Han on 01-03-2012, to allow the leaf
+        ##and fruit parameters to be updated according to the re-definition outside lpy
+        ##(in parasuper_pc.py) instead of using the ini file.
+        leaf_parameters = options.leaf.__dict__
+        fruit_parameters = options.fruit.__dict__
+
+        m = metamer_data(floral=flower, number=1, hlu=a.hlu, zone=a.sequence[a.sequence_position][0], observation=a.get_observation_from_sequence(),
+                              parent_observation= a.parent_observation, parent_unit_id=a.parent_unit_id, parent_fbr_id=a.parent_fbr_id, parent_tree_id=a.parent_tree_id,
+                              p_angle=(tree.phyllotactic_angle), b_angle=branching_angle, wood=wood, internode=internode,
+                              fruit=AppleFruit(**fruit_parameters), leaf=AppleLeaf(**leaf_parameters))
+        m.trunk = a.trunk
+        m.year = simulation.date.year
+
+
+        #Added by Han on 11-07-2012
+        m.sylleptic = a.sylleptic
+
+        #produce metamer(m) apex(a)
+        #Modified by Han on 16-05-2012
+        if not growth_pause:
+            produce metamer(m) apex(a)
+        else:
+            a.sequence_position = 0
+            produce apex(a)
+    else:
+        produce apex(a)
+
+metamer(m) > metamer(mr) apex(a):
+    # case of a floral immediate lateral axis: should be treated as
+    # laterals and not as terminals
+    if (not m.developped and a.parent_observation == 'floral' and a.sequence_position == 0):
+        m.developped = True
+        #if (boolean_event(tree.inflorescence_death_probability)) or (m.observation == 'sylleptic_short' or m.observation == 'sylleptic_medium' or m.observation == 'sylleptic_large'):
+        #if (boolean_event(tree.inflorescence_death_probability)) or (m.observation == 'small' or m.observation == 'medium' or m.observation == 'large'):
+        if (boolean_event(tree.inflorescence_death_probability)):
+            produce metamer(m)
+        m.branching_angle = tree.floral_branching_angle
+        hlu = rotate_frame_at_branch(m.hlu, m.branching_angle, m.phyllotactic_angle);
+
+        sylleptic_apex = apex_data(hlu, terminal_fate(simulation.date.year, 'floral'), sylleptic=True, **apex_parameters)
+        sylleptic_apex.parent_observation = 'floral'
+
+        if m.parent_fbr_id == 0:
+            tree.first_branches +=1
+            #The parent_fbr_id ranges from 0 to tree.first_branches (rather than to tree.frist-branches-1)
+            #This is because, the trunk is regarded by branch 0 as default
+            #Thus the id of the first real branch should be 1
+            sylleptic_apex.parent_fbr_id = tree.first_branches
+        else:
+            sylleptic_apex.parent_fbr_id = m.parent_fbr_id
+        produce metamer(m) SB() branch() apex(sylleptic_apex) EB()
+
+metamer(m):
+    if (options.stocatree.ruptures and rupture(m.cumulated_torque, m.radius, wood._modulus_of_rupture)):
+        if verbose:
+          print 'EXTRAORDINARY EVENT: There was a rupture in the system.\n'
+          produce Label('Cut') Cut()
+
+    #if (m.observation!= 'dormant' and  not m.developped and simulation.events.bud_break.active):
+    #This condition was modified by Han in May 2011 to enable the temperature effect on bud break
+    #if (m.observation!= 'dormant' and  not m.developped) and (bud_break or (m.observation == 'sylleptic_short' or m.observation == 'sylleptic_medium' or m.observation == 'sylleptic_large')):
+    #if (m.observation!= 'dormant' and  not m.developped and bud_break) or (m.observation == 'small' or m.observation == 'medium' or m.observation == 'large'):
+    #if (m.observation!= 'dormant' and  not m.developped and bud_break):
+    #if (m.observation!= 'dormant' and  not m.developped and (bud_break or ((m.observation == 'small' or m.observation == 'medium' or m.observation == 'large') and m.parent_observation == "trunk"))):
+
+
+
+
+    ## Creating new lateral apex if metamer is not dormant, not already developed and if it's budbreak or trunk sylleptic
+
+    #if (m.observation!= 'dormant' and  not m.developped and (bud_break or ((m.observation == 'small' or m.observation == 'medium' or m.observation == 'large') and m.parent_observation == "trunk" and m.sylleptic == True))):
+    if (m.observation!= 'dormant' and  not m.developped ):
+        m.developped = True
+        hlu = rotate_frame_at_branch(m.hlu, m.branching_angle, m.phyllotactic_angle)
+
+        if m.observation == 'sylleptic_small':
+          apexobs = 'small'
+          apexsyll = True
+        elif m.observation == 'sylleptic_medium':
+          apexobs = 'medium'
+          apexsyll = True
+        elif m.observation == 'sylleptic_large':
+          apexobs = 'large'
+          apexsyll = True
+        else:
+          apexobs = m.observation
+          apexsyll = False
+
+        a = apex_data(hlu, observation=apexobs, sylleptic=apexsyll, **apex_parameters)
+
+        if m.parent_fbr_id == 0:
+            tree.first_branches +=1
+            #The parent_fbr_id ranges from 0 to tree.first_branches (rather than to tree.frist-branches-1)
+            #This is because, the trunk is regarded by branch 0 as default
+            #Thus the id of the first real branch should be 1
+            a.parent_fbr_id = tree.first_branches
+        else:
+            a.parent_fbr_id = m.parent_fbr_id
+        #if debug:
+        #  print("Group 4: Metamer {2} of shoot {3} generates lateral Apex to generate {1} shoot @ {0}".format(simulation.date, a.get_observation(), m.number, m.parent_unit_id))
+        produce metamer(m) SB() branch() apex(a) EB()
+    else:
+        produce metamer(m)
+
+
+#================= GROUP 5 : Pruning Forward ===================#
+#===============================================================#
+group 5:
+
+#X < metamer(m) :
+metamer(m) > X :
+  #if not m.to_prune:
+  if not m.cut and not m.to_prune:
+    m.cut = True
+    m.to_prune = True
+    produce metamer(m)
+  elif not m.cut and m.to_prune:
+    m.to_prune = False
+    produce metamer(m)
+  elif m.cut and m.to_prune:
+    #produce Cut()
+    m.cut = False
+    m.to_prune = False
+    #m.branching_angle = tree.floral_branching_angle
+
+    # There will be prunig reaction only if cut is after rank 5, otherwise pruning is ment not to have reaction
+    if m.number > 4 and m.pruning_react:
+
+      new_br_angle, new_phyllo_angle = m.pruning_reaction_angle(tree.phyllotactic_angle)
+      m.branching_angle = new_br_angle
+      m.phyllotactic_angle = new_phyllo_angle
+      m.pruned_data = (0, m.closest_apex, m.farthest_apex, m.sons_nb)
+      m.pruning_react = False
+      m.developed = True
+
+      hlu = rotate_frame_at_branch(m.hlu, m.branching_angle, m.phyllotactic_angle);
+
+
+      if debug:
+        print("Cutting a branch of type {0} at rank {1} and at {2} from closest apex and {3} from farthest apex".format(m.parent_observation, m.number, m.closest_apex, m.farthest_apex))
+        print("New branching angle={0} and new phyllotactic angle={1}".format(new_br_angle, new_phyllo_angle))
+
+      pruning_apex = apex_data(hlu, m.parent_observation, **apex_parameters)
+      pruning_apex.from_pruning = True
+      pruning_apex.rank = m.number
+      pruning_apex.year = m.year #new apex holds the same year as the originating metamer
+      pruning_apex.react_pos = 0
+      pruning_apex.closest_apex = m.closest_apex
+      pruning_apex.farthest_apex = m.farthest_apex
+      pruning_apex.sons_nb = m.sons_nb
+
+      if m.parent_fbr_id == 0:
+        tree.first_branches +=1
+        #The parent_fbr_id ranges from 0 to tree.first_branches (rather than to tree.first-branches-1)
+        #This is because, the trunk is regarded by branch 0 as default
+        #Thus the id of the first real branch should be 1
+        pruning_apex.parent_fbr_id = tree.first_branches
+      else:
+        pruning_apex.parent_fbr_id = m.parent_fbr_id
+
+      if debug:
+        agl = math.degrees(math.acos(pgl.dot(m.hlu.heading.normed(), pgl.Vector3(0,0,1))))
+        agl2 = math.degrees(math.acos(pgl.dot(pruning_apex.hlu.heading.normed(), pgl.Vector3(0,0,1))))
+        print "Producing pruning apex with heading {0} at {3} deg from vertical \n Origin metamer having heading {1}, at {2} deg from vertical".format(pruning_apex.hlu.heading, m.hlu.heading, agl, agl2)
+
+      produce metamer(m) SB() branch() apex(pruning_apex) EB() Cut()
+      #produce SB() branch() apex(pruning_apex) EB() Cut()
+    else:
+      produce Cut()
+
+#metamer(ml) SB() branch() metamer(mb) EB() << metamer(m):
+metamer(ml) SB() branch() << metamer(m):
+  if not ml.to_prune and not m.cut: # why m.cut ? ml.cut instead ?
+    m.to_prune = False    
+  elif ml.to_prune:
+    m.to_prune = True    
+  produce metamer(m)
+
+metamer(ml) << metamer(m):
+  if not ml.to_prune and not m.cut:
+    m.to_prune = False    
+  elif ml.to_prune:
+    m.to_prune = True    
+  produce metamer(m)
+
+X:
+    produce
+
+
+#================= GROUP 6 : Pruning Backward ==================#
+#===============================================================#
+group 6:
+
+#metamer(m) >> SB() branch() metamer(mr):
+metamer(m) >> SB() branch() metamer(mb) EB() metamer(mr):
+  if (not mr.to_prune or not mb.to_prune) and m.to_prune:
+    m.cut = False
+    m.to_prune = False
+
+  #pruning reaction are restricted to the pruned axis
+  if mr.pruned_data:
+    rpos, closest_apex, farthest_apex, sons_nb = mr.pruned_data
+    if rpos < 2:
+      #m.pruning_react = False
+      m.pruned_data = (rpos, closest_apex, farthest_apex, sons_nb)
+
+  produce metamer(m)
+  
+
+metamer(m) >> metamer(mr):
+  if mr.pruned_data:
+    rpos, closest_apex, farthest_apex, sons_nb = mr.pruned_data
+    if rpos < 2 and m.pruning_react:
+      #m.pruning_react = True #useless if reaction is done directly
+      m.pruned_data = (rpos+1, closest_apex, farthest_apex, sons_nb)
+
+      ############ Pruning reaction ###################
+      #new_br_angle, new_phyllo_angle = m.pruning_reaction_angle(tree.phyllotactic_angle)
+      #m.branching_angle = new_br_angle
+      m.pruning_react = False
+      m.developed = True
+
+      #In the case of indirect reaction phylotactic angle is kept
+      #m.phyllotactic_angle = new_phyllo_angle
+      #m.pruning_react = True #reaction is done directly here
+
+      hlu = rotate_frame_at_branch(m.hlu, m.branching_angle, m.phyllotactic_angle);
+
+
+      if debug:
+        print("New reacting branch of type {0} at rank {1} and at {2} from closest apex and {3} from farthest apex".format(m.parent_observation, m.number, m.closest_apex, m.farthest_apex))
+        #print("New branching angle={0} and new phyllotactic angle={1}".format(new_br_angle, new_phyllo_angle))
+
+      pruning_apex = apex_data(hlu, m.parent_observation, **apex_parameters)
+      pruning_apex.from_pruning = True
+      pruning_apex.rank = m.number
+      pruning_apex.year = m.year #new apex holds the same year as the originating metamer
+      pruning_apex.react_pos = rpos+1
+      pruning_apex.closest_apex = m.closest_apex
+      pruning_apex.farthest_apex = m.farthest_apex
+      pruning_apex.sons_nb = m.sons_nb
+
+      if m.parent_fbr_id == 0:
+        tree.first_branches +=1
+        #The parent_fbr_id ranges from 0 to tree.first_branches (rather than to tree.first-branches-1)
+        #This is because, the trunk is regarded by branch 0 as default
+        #Thus the id of the first real branch should be 1
+        pruning_apex.parent_fbr_id = tree.first_branches
+      else:
+        pruning_apex.parent_fbr_id = m.parent_fbr_id
+
+      if debug:
+        agl = math.degrees(math.acos(pgl.dot(m.hlu.heading.normed(), pgl.Vector3(0,0,1))))
+        agl2 = math.degrees(math.acos(pgl.dot(pruning_apex.hlu.heading.normed(), pgl.Vector3(0,0,1))))
+        print "Producing pruning apex with heading {0} at {3} deg from vertical \n Origin metamer having heading {1}, at {2} deg from vertical".format(pruning_apex.hlu.heading, m.hlu.heading, agl, agl2)
+
+      produce metamer(m) SB() branch() apex(pruning_apex) EB()
+     
+      #################################################
+
+    else: #previous metamer was the last one to react
+      produce metamer(m)
+
+  if not mr.to_prune and m.to_prune:
+    m.cut = False
+    m.to_prune = False
+    produce metamer(m)
+
+#================== GROUP 7 : Write LString ====================#
+#===============================================================#
+group 7:
+
+#thestring = ''
+
+root():
+  global thestring
+  thestring.append('root')
+
+metamer(m):
+  global thestring
+  thestring.append(m)
+
+apex(a):
+  global thestring
+  thestring.append(a)
+
+branch():
+  global thestring
+  thestring.append('branch')
+
+growth_unit(g):
+  global thestring
+  thestring.append(g)
+
+SB():
+  global thestring
+  thestring.append('sb')
+
+EB():
+  global thestring
+  thestring.append('eb')
+
+
+
+#===============================================================#
+#               START OF INTERPRETATION RULES                   #
+#               Graphical rendering of the tree                 #
+#===============================================================#
+
+group 0:
+interpretation:
+
+root():
+    dateLabel = str(simulation.date.year) + '-' + str(simulation.date.month) + '-' + str(simulation.date.day)
+    #Cylinder replaces the ground shape, size is ground radius that gives 
+    #an estimate of the extension of the canopy projection on the ground
+    # *5.0  = *10/2. [unit conversion / diameter2radius] 
+    ground_radius = max(1.0,  (can_x_max - can_x_min)*5.0, (can_y_max - can_y_min)*5.0 )
+
+    if options.general.pruning:
+      produce SB() SetColor(colors.ground) PglShape(pgl.Cylinder(ground_radius,0.5,True,50)) EB();
+      #produce SB() SetColor(colors.ground) PglShape(ground_surface, 10.0) EB();
+    else:
+      #produce SB() f(-3) SetColor(colors.background) Label(dateLabel) f(3) SetColor(colors.ground) PglShape(pgl.Cylinder(5,0.5,True,50)) EB();
+
+      #Displaying counts values
+      if options.output.counts:
+        elmt = data.counts.display()
+        for i,e in enumerate(elmt):
+          countslabel = "{elmt:<15s} : {value:>5.3e}".format(elmt=e, value=data.counts.__dict__[e])
+          nproduce SB()SetColor(colors.background) @g(pgl.Text(countslabel,(3,90-3*i,0.9), True)) EB();
+
+      #Displaying trunk values
+      if options.output.trunk:
+        elmt = data.trunk.display()
+        for i,e in enumerate(elmt):
+          countslabel = "{elmt:<15s} : {value:>5.3e}".format(elmt=e, value=data.trunk.__dict__[e])
+          nproduce SB()SetColor(colors.background) @g(pgl.Text(countslabel,(3,70-3*i,0.9), True)) EB();
+
+
+      #Displaying shoots counting
+      if options.output.shoots:
+        elmt = data.shoots.display()
+        for i,e in enumerate(elmt):
+          countslabel = "{elmt:<10s} : {value:>3n}".format(elmt=e, value=data.shoots.__dict__[e])
+          nproduce SB()SetColor(colors.background) @g(pgl.Text(countslabel,(85,90-3*i,0.9), True)) EB();
+
+
+      produce SB() SetColor(colors.background) @g(pgl.Text(dateLabel,(3,5,0.9), True)) SetColor(colors.ground) PglShape(pgl.Cylinder(ground_radius,0.5,True,50)) EB();
+      #produce SB() f(-3) SetColor(colors.background) Label(dateLabel) f(3) SetColor(colors.ground) PglShape(ground_surface, 10.0) EB();
+
+    
+metamer(m):
+
+    #Updating the ground projection extension of the canopy
+    global can_x_max
+    global can_x_min
+    global can_y_max
+    global can_y_min
+
+    if m.position.x > can_x_max:
+      can_x_max = m.position.x
+    if m.position.x < can_x_min:
+      can_x_min = m.position.x
+    if m.position.y > can_y_max:
+      can_y_max = m.position.y
+    if m.position.y < can_y_min:
+      can_y_min = m.position.y
+
+
+    #print 'interpretation called', getIterationNb()
+    shoot_colour = colors.bark
+    if options.stocatree.render_mode == 'bark':
+        shoot_colour = colors.bark
+    elif options.stocatree.render_mode == 'observations':
+        shoot_colour = colors.observation.get_color(m.observation)
+    elif options.stocatree.render_mode == 'zones':
+        shoot_colour = colors.zone.get_color(m.zone)
+    elif options.stocatree.render_mode == 'reaction_wood':
+        shoot_colour = colors.reaction_wood.get_color(m.layers[-1].reaction_wood)
+    elif options.stocatree.render_mode == 'year':
+        shoot_colour = colors.year.get_color(m.year, options.general.starting_year)
+    elif options.general.pruning:
+        shoot_colour = colors.pruning.get_color(m.to_prune)
+    nproduce SetHead(m.hlu.heading.x, m.hlu.heading.y, m.hlu.heading.z, m.hlu.up.x, m.hlu.up.y, m.hlu.up.z)
+    #nproduce SetWidth(m.radius*12.) SetColor(shoot_colour) F(m.length*10)
+    #Modified by Han on 06-03-2012
+    nproduce SetWidth(m.radius*10) SetColor(shoot_colour) f(m.offset*10) F(m.length*10)
+    d2r = 180.0 / constants.pi
+
+    if (m.fruit.state == 'flower'):
+        #TODO the five flowers are at the same place !!
+        scale = 5.
+        nproduce SB() RollL(m.phyllotactic_angle * d2r)
+        nproduce Up(45)
+        nproduce SetColor(colors.stamen)
+        nproduce SetWidth(0.0025*scale)
+        nproduce SB()
+        nproduce SB() Up(15) F(0.0125) EB() RollL(72.0)
+        nproduce SB() Up(15) F(0.0125) EB() RollL(72.0)
+        nproduce SB() Up(15) F(0.0125) EB() RollL(72.0)
+        nproduce SB() Up(15) F(0.0125) EB() RollL(72.0)
+        nproduce SB() Up(15) F(0.0125) EB() RollL(72.0)
+        nproduce SB() Up(15) F(0.0125) EB() RollL(72.0)
+        nproduce SB() Up(15) F(0.0125) EB() RollL(72.0)
+        nproduce SB() Up(15) F(0.0125) EB() RollL(72.0)
+        nproduce SB() Up(15) F(0.0125) EB() RollL(72.0)
+        nproduce SB() Up(15) F(0.0125) EB()
+        nproduce EB()
+        nproduce SetColor(colors.petal)
+        nproduce PglShape(petal_surface, 0.02*scale) RollL(144.0)
+        nproduce PglShape(petal_surface, 0.02*scale) RollL(144.0)
+        nproduce PglShape(petal_surface, 0.02*scale) RollL(144.0)
+        nproduce PglShape(petal_surface, 0.02*scale) RollL(144.0)
+        nproduce PglShape(petal_surface, 0.02*scale)
+        nproduce EB()
+        #
+    elif (m.fruit.state == 'fruit'):
+        r = m.fruit.mass *1.5
+        if r != 0:
+            nproduce SB() RollL(float(m.phyllotactic_angle * d2r))
+            nproduce Down(90.0) f(r) SetColor(colors.fruit) Sphere(r) EB()
+    #f
+    if m.leaf.state=='growing':
+        r = m.leaf.mass *1000.
+        if r==0:
+            r=0.1
+        norm = 0.3
+
+        colors.leaf = 15
+
+        #check max total mass should be less than 0.66 grams
+
+        #Don't touch this!!! change the r value only
+        # at least don't change the factors between F and PglShape (keep the 0.1 factor).
+        #TODO take m radisu into account
+        #nproduce (RollL(m.phyllotactic_angle * d2r) Up(90.0) SetWidth(0.002) F(r *0.1) RollToVert() PglShape(leaf_surface, r) EB())
+        #r = math.sqrt(m.leaf_area*1000)
+
+        #The calculation of r was re-designed by Han on 13-05-2011. The value 0.006154 is the leaf surface returned from plantGL when r is set as 1.
+        r = math.sqrt(m.leaf_area/0.006154)
+        #The following n-production was modified by Han on 16-05-2011.
+        #If r is 0 or lower, it is not necessary to set it as 0.1 or 0.000001 to represent a surface for leaf, as there is no such a leaf at all.
+        #if r == 0:
+          #r = 0.000001
+        if r > 0 and not options.general.pruning:
+            if simulation.events.autumn.active is False:
+                nproduce SB() RollL(m.phyllotactic_angle * d2r)  +(90) SetWidth(0.002) SetColor(colors.petiole) F(r *0.1) SetColor(colors.leaf) PglShape(leaf_surface, r) +(-90) EB()
+            else:
+                nproduce SB() RollL(m.phyllotactic_angle * d2r)  +(90) SetWidth(0.002) SetColor(colors.petiole) F(r *0.1) SetColor(colors.autumn_leaf) PglShape(leaf_surface, r) +(-90) EB()
+          
+          
+          #nproduce (RollL(m.phyllotactic_angle * d2r)  +(90) SetWidth(0.002) F(r *0.1)   PglShape(Totoleaf,r) +(-90) EB())
+
+    produce
+
+endgroup
+homomorphism:
+
+endlsystem
+#===============================================================#
+#                     END OF LSYSTEM RULES                      #
+#               Everything below is generate by Lpy             #
+#===============================================================#
+
+
+###### INITIALISATION ######
+
+__lpy_code_version__ = 1.1
+
+def __initialiseContext__(context):
+	import openalea.plantgl.all as pgl
+	Color_0 = pgl.Material("Color_0" , ambient = (19,19,19) , diffuse = 0 , )
+	Color_0.name = "Color_0"
+	context.turtle.setMaterial(0,Color_0)
+	Color_1 = pgl.Material("Color_1" , ambient = (255,0,0) , diffuse = 1 , )
+	Color_1.name = "Color_1"
+	context.turtle.setMaterial(1,Color_1)
+	Color_2 = pgl.Material("Color_2" , ambient = (0,35,35) , diffuse = 7.28571 , )
+	Color_2.name = "Color_2"
+	context.turtle.setMaterial(2,Color_2)
+	Color_3 = pgl.Material("Color_3" , ambient = (0,0,27) , diffuse = 9.44444 , )
+	Color_3.name = "Color_3"
+	context.turtle.setMaterial(3,Color_3)
+	Color_4 = pgl.Material("Color_4" , ambient = (51,0,51) , diffuse = 5 , )
+	Color_4.name = "Color_4"
+	context.turtle.setMaterial(4,Color_4)
+	Color_5 = pgl.Material("Color_5" , ambient = (18,0,0) , diffuse = 14.1111 , specular = (0,0,0) , )
+	Color_5.name = "Color_5"
+	context.turtle.setMaterial(5,Color_5)
+	Color_6 = pgl.Material("Color_6" , ambient = (45,45,0) , diffuse = 5.17778 , specular = (49,23,9) , )
+	Color_6.name = "Color_6"
+	context.turtle.setMaterial(6,Color_6)
+	Color_7 = pgl.Material("Color_7" , ambient = (0,29,29) , diffuse = 8.7931 , )
+	Color_7.name = "Color_7"
+	context.turtle.setMaterial(7,Color_7)
+	Color_8 = pgl.Material("Color_8" , ambient = (0,31,0) , diffuse = 2.67742 , )
+	Color_8.name = "Color_8"
+	context.turtle.setMaterial(8,Color_8)
+	Color_9 = pgl.Material("Color_9" , ambient = (41,41,0) , diffuse = 6.21951 , specular = (0,0,0) , )
+	Color_9.name = "Color_9"
+	context.turtle.setMaterial(9,Color_9)
+	Color_10 = pgl.Material("Color_10" , ambient = (41,0,0) , diffuse = 6.21951 , )
+	Color_10.name = "Color_10"
+	context.turtle.setMaterial(10,Color_10)
+	Color_11 = pgl.Material("Color_11" , ambient = (30,0,30) , diffuse = 8.5 , )
+	Color_11.name = "Color_11"
+	context.turtle.setMaterial(11,Color_11)
+	Color_12 = pgl.Material("Color_12" , ambient = (0,0,31) , diffuse = 8.22581 , )
+	Color_12.name = "Color_12"
+	context.turtle.setMaterial(12,Color_12)
+	Color_13 = pgl.Material("Color_13" , ambient = (45,45,45) , diffuse = 5.66667 , )
+	Color_13.name = "Color_13"
+	context.turtle.setMaterial(13,Color_13)
+	Color_14 = pgl.Material("Color_14" , ambient = (63,12,13) , diffuse = 1.57143 , specular = (51,44,0) , emission = (8,8,8) , shininess = 0.47 , )
+	Color_14.name = "Color_14"
+	context.turtle.setMaterial(14,Color_14)
+	Color_15 = pgl.Material("Color_15" , ambient = (0,59,6) , diffuse = 1.59322 , )
+	Color_15.name = "Color_15"
+	context.turtle.setMaterial(15,Color_15)
+	Color_16 = pgl.Material("Color_16" , ambient = (29,7,6) , diffuse = 4.41379 , specular = (37,95,28) , )
+	Color_16.name = "Color_16"
+	context.turtle.setMaterial(16,Color_16)
+	Color_17 = pgl.Material("Color_17" , ambient = (107,59,54) , diffuse = 1.91589 , transparency = 0.17 , )
+	Color_17.name = "Color_17"
+	context.turtle.setMaterial(17,Color_17)
+	Color_18 = pgl.Material("Color_18" , ambient = (82,64,45) , diffuse = 2.56098 , specular = (0,0,0) , shininess = 0 , )
+	Color_18.name = "Color_18"
+	context.turtle.setMaterial(18,Color_18)
+	Color_19 = pgl.Material("Color_19" , ambient = (49,29,25) , diffuse = 2.55102 , specular = (0,0,0) , shininess = 0 , )
+	Color_19.name = "Color_19"
+	context.turtle.setMaterial(19,Color_19)
+	Color_20 = pgl.Material("Color_20" , ambient = (0,85,0) , diffuse = 1.38824 , )
+	Color_20.name = "Color_20"
+	context.turtle.setMaterial(20,Color_20)
+	Color_24 = pgl.Material("Color_24" , ambient = (255,247,1) , diffuse = 0.627451 , )
+	Color_24.name = "Color_24"
+	context.turtle.setMaterial(24,Color_24)
+	Color_25 = pgl.Material("Color_25" , ambient = (48,255,2) , diffuse = 0.627451 , )
+	Color_25.name = "Color_25"
+	context.turtle.setMaterial(25,Color_25)
+	Color_26 = pgl.Material("Color_26" , ambient = (1,255,255) , diffuse = 0.627451 , )
+	Color_26.name = "Color_26"
+	context.turtle.setMaterial(26,Color_26)
+	Color_27 = pgl.Material("Color_27" , ambient = (0,46,255) , diffuse = 0.627451 , )
+	Color_27.name = "Color_27"
+	context.turtle.setMaterial(27,Color_27)
+	Color_28 = pgl.Material("Color_28" , ambient = (255,0,255) , diffuse = 0.627451 , )
+	Color_28.name = "Color_28"
+	context.turtle.setMaterial(28,Color_28)
+	Color_29 = pgl.Material("Color_29" , ambient = (255,21,0) , diffuse = 0.627451 , )
+	Color_29.name = "Color_29"
+	context.turtle.setMaterial(29,Color_29)
+	Color_34 = pgl.Material("Color_34" , ambient = (0,218,32) , diffuse = 0.733945 , )
+	Color_34.name = "Color_34"
+	context.turtle.setMaterial(34,Color_34)
+	Color_35 = pgl.Material("Color_35" , ambient = (0,1,21) , diffuse = 8.14286 , )
+	Color_35.name = "Color_35"
+	context.turtle.setMaterial(35,Color_35)
+	Color_36 = pgl.Material("Color_36" , ambient = (25,0,255) , diffuse = 0 , specular = (0,0,0) , )
+	Color_36.name = "Color_36"
+	context.turtle.setMaterial(36,Color_36)
+	Color_37 = pgl.Material("Color_37" , ambient = (28,0,250) , diffuse = 0 , specular = (0,0,0) , )
+	Color_37.name = "Color_37"
+	context.turtle.setMaterial(37,Color_37)
+	Color_38 = pgl.Material("Color_38" , ambient = (32,0,246) , diffuse = 0 , specular = (0,0,0) , )
+	Color_38.name = "Color_38"
+	context.turtle.setMaterial(38,Color_38)
+	Color_39 = pgl.Material("Color_39" , ambient = (36,0,242) , diffuse = 0 , specular = (0,0,0) , )
+	Color_39.name = "Color_39"
+	context.turtle.setMaterial(39,Color_39)
+	Color_40 = pgl.Material("Color_40" , ambient = (40,0,238) , diffuse = 0 , specular = (0,0,0) , )
+	Color_40.name = "Color_40"
+	context.turtle.setMaterial(40,Color_40)
+	Color_41 = pgl.Material("Color_41" , ambient = (44,0,234) , diffuse = 0 , specular = (0,0,0) , )
+	Color_41.name = "Color_41"
+	context.turtle.setMaterial(41,Color_41)
+	Color_42 = pgl.Material("Color_42" , ambient = (48,0,229) , diffuse = 0 , specular = (0,0,0) , )
+	Color_42.name = "Color_42"
+	context.turtle.setMaterial(42,Color_42)
+	Color_43 = pgl.Material("Color_43" , ambient = (51,0,225) , diffuse = 0 , specular = (0,0,0) , )
+	Color_43.name = "Color_43"
+	context.turtle.setMaterial(43,Color_43)
+	Color_44 = pgl.Material("Color_44" , ambient = (55,0,221) , diffuse = 0 , specular = (0,0,0) , )
+	Color_44.name = "Color_44"
+	context.turtle.setMaterial(44,Color_44)
+	Color_45 = pgl.Material("Color_45" , ambient = (101,0,171) , diffuse = 0 , specular = (0,0,0) , )
+	Color_45.name = "Color_45"
+	context.turtle.setMaterial(45,Color_45)
+	Color_46 = pgl.Material("Color_46" , ambient = (63,0,213) , diffuse = 0 , specular = (0,0,0) , )
+	Color_46.name = "Color_46"
+	context.turtle.setMaterial(46,Color_46)
+	Color_47 = pgl.Material("Color_47" , ambient = (67,0,208) , diffuse = 0 , specular = (0,0,0) , )
+	Color_47.name = "Color_47"
+	context.turtle.setMaterial(47,Color_47)
+	Color_48 = pgl.Material("Color_48" , ambient = (71,0,204) , diffuse = 0 , specular = (0,0,0) , )
+	Color_48.name = "Color_48"
+	context.turtle.setMaterial(48,Color_48)
+	Color_49 = pgl.Material("Color_49" , ambient = (74,0,200) , diffuse = 0 , specular = (0,0,0) , )
+	Color_49.name = "Color_49"
+	context.turtle.setMaterial(49,Color_49)
+	Color_50 = pgl.Material("Color_50" , ambient = (78,0,196) , diffuse = 0 , specular = (0,0,0) , )
+	Color_50.name = "Color_50"
+	context.turtle.setMaterial(50,Color_50)
+	Color_51 = pgl.Material("Color_51" , ambient = (82,0,192) , diffuse = 0 , specular = (0,0,0) , )
+	Color_51.name = "Color_51"
+	context.turtle.setMaterial(51,Color_51)
+	Color_52 = pgl.Material("Color_52" , ambient = (86,0,188) , diffuse = 0 , specular = (0,0,0) , )
+	Color_52.name = "Color_52"
+	context.turtle.setMaterial(52,Color_52)
+	Color_53 = pgl.Material("Color_53" , ambient = (90,0,183) , diffuse = 0 , specular = (0,0,0) , )
+	Color_53.name = "Color_53"
+	context.turtle.setMaterial(53,Color_53)
+	Color_54 = pgl.Material("Color_54" , ambient = (94,0,179) , diffuse = 0 , specular = (0,0,0) , )
+	Color_54.name = "Color_54"
+	context.turtle.setMaterial(54,Color_54)
+	Color_55 = pgl.Material("Color_55" , ambient = (97,0,175) , diffuse = 0 , specular = (0,0,0) , )
+	Color_55.name = "Color_55"
+	context.turtle.setMaterial(55,Color_55)
+	Color_56 = pgl.Material("Color_56" , ambient = (59,0,217) , diffuse = 0 , specular = (0,0,0) , )
+	Color_56.name = "Color_56"
+	context.turtle.setMaterial(56,Color_56)
+	Color_57 = pgl.Material("Color_57" , ambient = (105,0,167) , diffuse = 0 , specular = (0,0,0) , )
+	Color_57.name = "Color_57"
+	context.turtle.setMaterial(57,Color_57)
+	Color_58 = pgl.Material("Color_58" , ambient = (109,0,162) , diffuse = 0 , specular = (0,0,0) , )
+	Color_58.name = "Color_58"
+	context.turtle.setMaterial(58,Color_58)
+	Color_59 = pgl.Material("Color_59" , ambient = (113,0,158) , diffuse = 0 , specular = (0,0,0) , )
+	Color_59.name = "Color_59"
+	context.turtle.setMaterial(59,Color_59)
+	Color_60 = pgl.Material("Color_60" , ambient = (116,0,154) , diffuse = 0 , specular = (0,0,0) , )
+	Color_60.name = "Color_60"
+	context.turtle.setMaterial(60,Color_60)
+	Color_61 = pgl.Material("Color_61" , ambient = (120,0,150) , diffuse = 0 , specular = (0,0,0) , )
+	Color_61.name = "Color_61"
+	context.turtle.setMaterial(61,Color_61)
+	Color_62 = pgl.Material("Color_62" , ambient = (124,0,146) , diffuse = 0 , specular = (0,0,0) , )
+	Color_62.name = "Color_62"
+	context.turtle.setMaterial(62,Color_62)
+	Color_63 = pgl.Material("Color_63" , ambient = (128,0,142) , diffuse = 0 , specular = (0,0,0) , )
+	Color_63.name = "Color_63"
+	context.turtle.setMaterial(63,Color_63)
+	Color_64 = pgl.Material("Color_64" , ambient = (132,0,137) , diffuse = 0 , specular = (0,0,0) , )
+	Color_64.name = "Color_64"
+	context.turtle.setMaterial(64,Color_64)
+	Color_65 = pgl.Material("Color_65" , ambient = (136,0,133) , diffuse = 0 , specular = (0,0,0) , )
+	Color_65.name = "Color_65"
+	context.turtle.setMaterial(65,Color_65)
+	Color_66 = pgl.Material("Color_66" , ambient = (140,0,129) , diffuse = 0 , specular = (0,0,0) , )
+	Color_66.name = "Color_66"
+	context.turtle.setMaterial(66,Color_66)
+	Color_67 = pgl.Material("Color_67" , ambient = (143,0,125) , diffuse = 0 , specular = (0,0,0) , )
+	Color_67.name = "Color_67"
+	context.turtle.setMaterial(67,Color_67)
+	Color_68 = pgl.Material("Color_68" , ambient = (147,0,121) , diffuse = 0 , specular = (0,0,0) , )
+	Color_68.name = "Color_68"
+	context.turtle.setMaterial(68,Color_68)
+	Color_69 = pgl.Material("Color_69" , ambient = (151,0,116) , diffuse = 0 , specular = (0,0,0) , )
+	Color_69.name = "Color_69"
+	context.turtle.setMaterial(69,Color_69)
+	Color_70 = pgl.Material("Color_70" , ambient = (155,0,112) , diffuse = 0 , specular = (0,0,0) , )
+	Color_70.name = "Color_70"
+	context.turtle.setMaterial(70,Color_70)
+	Color_71 = pgl.Material("Color_71" , ambient = (159,0,108) , diffuse = 0 , specular = (0,0,0) , )
+	Color_71.name = "Color_71"
+	context.turtle.setMaterial(71,Color_71)
+	Color_72 = pgl.Material("Color_72" , ambient = (163,0,104) , diffuse = 0 , specular = (0,0,0) , )
+	Color_72.name = "Color_72"
+	context.turtle.setMaterial(72,Color_72)
+	Color_73 = pgl.Material("Color_73" , ambient = (166,0,100) , diffuse = 0 , specular = (0,0,0) , )
+	Color_73.name = "Color_73"
+	context.turtle.setMaterial(73,Color_73)
+	Color_74 = pgl.Material("Color_74" , ambient = (170,0,96) , diffuse = 0 , specular = (0,0,0) , )
+	Color_74.name = "Color_74"
+	context.turtle.setMaterial(74,Color_74)
+	Color_75 = pgl.Material("Color_75" , ambient = (174,0,91) , diffuse = 0 , specular = (0,0,0) , )
+	Color_75.name = "Color_75"
+	context.turtle.setMaterial(75,Color_75)
+	Color_76 = pgl.Material("Color_76" , ambient = (178,0,87) , diffuse = 0 , specular = (0,0,0) , )
+	Color_76.name = "Color_76"
+	context.turtle.setMaterial(76,Color_76)
+	Color_77 = pgl.Material("Color_77" , ambient = (182,0,83) , diffuse = 0 , specular = (0,0,0) , )
+	Color_77.name = "Color_77"
+	context.turtle.setMaterial(77,Color_77)
+	Color_78 = pgl.Material("Color_78" , ambient = (186,0,79) , diffuse = 0 , specular = (0,0,0) , )
+	Color_78.name = "Color_78"
+	context.turtle.setMaterial(78,Color_78)
+	Color_79 = pgl.Material("Color_79" , ambient = (189,0,75) , diffuse = 0 , specular = (0,0,0) , )
+	Color_79.name = "Color_79"
+	context.turtle.setMaterial(79,Color_79)
+	Color_80 = pgl.Material("Color_80" , ambient = (193,0,70) , diffuse = 0 , specular = (0,0,0) , )
+	Color_80.name = "Color_80"
+	context.turtle.setMaterial(80,Color_80)
+	Color_81 = pgl.Material("Color_81" , ambient = (197,0,66) , diffuse = 0 , specular = (0,0,0) , )
+	Color_81.name = "Color_81"
+	context.turtle.setMaterial(81,Color_81)
+	Color_82 = pgl.Material("Color_82" , ambient = (201,0,62) , diffuse = 0 , specular = (0,0,0) , )
+	Color_82.name = "Color_82"
+	context.turtle.setMaterial(82,Color_82)
+	Color_83 = pgl.Material("Color_83" , ambient = (205,0,58) , diffuse = 0 , specular = (0,0,0) , )
+	Color_83.name = "Color_83"
+	context.turtle.setMaterial(83,Color_83)
+	Color_84 = pgl.Material("Color_84" , ambient = (209,0,54) , diffuse = 0 , specular = (0,0,0) , )
+	Color_84.name = "Color_84"
+	context.turtle.setMaterial(84,Color_84)
+	Color_85 = pgl.Material("Color_85" , ambient = (212,0,50) , diffuse = 0 , specular = (0,0,0) , )
+	Color_85.name = "Color_85"
+	context.turtle.setMaterial(85,Color_85)
+	Color_86 = pgl.Material("Color_86" , ambient = (216,0,45) , diffuse = 0 , specular = (0,0,0) , )
+	Color_86.name = "Color_86"
+	context.turtle.setMaterial(86,Color_86)
+	Color_87 = pgl.Material("Color_87" , ambient = (220,0,41) , diffuse = 0 , specular = (0,0,0) , )
+	Color_87.name = "Color_87"
+	context.turtle.setMaterial(87,Color_87)
+	Color_88 = pgl.Material("Color_88" , ambient = (224,0,37) , diffuse = 0 , specular = (0,0,0) , )
+	Color_88.name = "Color_88"
+	context.turtle.setMaterial(88,Color_88)
+	Color_89 = pgl.Material("Color_89" , ambient = (228,0,33) , diffuse = 0 , specular = (0,0,0) , )
+	Color_89.name = "Color_89"
+	context.turtle.setMaterial(89,Color_89)
+	Color_90 = pgl.Material("Color_90" , ambient = (232,0,29) , diffuse = 0 , specular = (0,0,0) , )
+	Color_90.name = "Color_90"
+	context.turtle.setMaterial(90,Color_90)
+	Color_91 = pgl.Material("Color_91" , ambient = (235,0,24) , diffuse = 0 , specular = (0,0,0) , )
+	Color_91.name = "Color_91"
+	context.turtle.setMaterial(91,Color_91)
+	Color_92 = pgl.Material("Color_92" , ambient = (239,0,20) , diffuse = 0 , specular = (0,0,0) , )
+	Color_92.name = "Color_92"
+	context.turtle.setMaterial(92,Color_92)
+	Color_93 = pgl.Material("Color_93" , ambient = (243,0,16) , diffuse = 0 , specular = (0,0,0) , )
+	Color_93.name = "Color_93"
+	context.turtle.setMaterial(93,Color_93)
+	Color_94 = pgl.Material("Color_94" , ambient = (247,0,12) , diffuse = 0 , specular = (0,0,0) , )
+	Color_94.name = "Color_94"
+	context.turtle.setMaterial(94,Color_94)
+	Color_95 = pgl.Material("Color_95" , ambient = (251,0,8) , diffuse = 0 , specular = (0,0,0) , )
+	Color_95.name = "Color_95"
+	context.turtle.setMaterial(95,Color_95)
+	Color_96 = pgl.Material("Color_96" , ambient = (255,0,4) , diffuse = 0 , specular = (0,0,0) , )
+	Color_96.name = "Color_96"
+	context.turtle.setMaterial(96,Color_96)
+	Color_97 = pgl.Material("Color_97" , ambient = (255,0,0) , diffuse = 0.619608 , )
+	Color_97.name = "Color_97"
+	context.turtle.setMaterial(97,Color_97)
+	Color_98 = pgl.Material("Color_98" , ambient = (149,0,0) , diffuse = 1.0604 , )
+	Color_98.name = "Color_98"
+	context.turtle.setMaterial(98,Color_98)
+	Color_99 = pgl.Material("Color_99" , ambient = (156,0,0) , diffuse = 0 , specular = (0,0,0) , )
+	Color_99.name = "Color_99"
+	context.turtle.setMaterial(99,Color_99)
+	Color_100 = pgl.Material("Color_100" , ambient = (165,24,0) , diffuse = 0 , specular = (0,0,0) , )
+	Color_100.name = "Color_100"
+	context.turtle.setMaterial(100,Color_100)
+	Color_101 = pgl.Material("Color_101" , ambient = (175,49,0) , diffuse = 0 , specular = (0,0,0) , )
+	Color_101.name = "Color_101"
+	context.turtle.setMaterial(101,Color_101)
+	Color_102 = pgl.Material("Color_102" , ambient = (185,74,0) , diffuse = 0 , specular = (0,0,0) , )
+	Color_102.name = "Color_102"
+	context.turtle.setMaterial(102,Color_102)
+	Color_103 = pgl.Material("Color_103" , ambient = (195,98,0) , diffuse = 0 , specular = (0,0,0) , )
+	Color_103.name = "Color_103"
+	context.turtle.setMaterial(103,Color_103)
+	Color_104 = pgl.Material("Color_104" , ambient = (205,123,0) , diffuse = 0 , specular = (0,0,0) , )
+	Color_104.name = "Color_104"
+	context.turtle.setMaterial(104,Color_104)
+	Color_105 = pgl.Material("Color_105" , ambient = (215,148,0) , diffuse = 0 , specular = (0,0,0) , )
+	Color_105.name = "Color_105"
+	context.turtle.setMaterial(105,Color_105)
+	Color_106 = pgl.Material("Color_106" , ambient = (225,172,0) , diffuse = 0 , specular = (0,0,0) , )
+	Color_106.name = "Color_106"
+	context.turtle.setMaterial(106,Color_106)
+	Color_107 = pgl.Material("Color_107" , ambient = (235,197,0) , diffuse = 0 , specular = (0,0,0) , )
+	Color_107.name = "Color_107"
+	context.turtle.setMaterial(107,Color_107)
+	Color_108 = pgl.Material("Color_108" , ambient = (245,222,0) , diffuse = 0 , specular = (0,0,0) , )
+	Color_108.name = "Color_108"
+	context.turtle.setMaterial(108,Color_108)
+	Color_109 = pgl.Material("Color_109" , ambient = (255,247,0) , diffuse = 0 , specular = (0,0,0) , )
+	Color_109.name = "Color_109"
+	context.turtle.setMaterial(109,Color_109)
+	context.animation_timestep = 0.0
+	context.options.setSelection('Module declaration',1)
+	context.options.setSelection('Module matching',0)
+	context.options.setSelection('Early return when no matching',0)
+	context.options.setSelection('Warning with Turtle inconsistency',0)
+	context.options.setSelection('Selection Always Required',1)
+	import openalea.plantgl.all as pgl
+	leaf_surface_patch = pgl.BezierPatch(	
+	    pgl.Point4Matrix([[(0.00990099, -0.00990099, 0.990099, 1), (0.019802, 0, 0.980198, 1), (0.00990099, 0, 0.990099, 1), (0.00990099, 0, 0.990099, 1)], [(-0.128713, -0.425743, 0.752475, 1), (-0.336634, -0.158416, 0.267327, 1), (-0.336634, 0.207921, 0.267327, 1), (-0.118812, 0.425743, 0.752475, 1)], [(0, -0.742574, 0.188119, 1), (0, -0.247525, 0.188119, 1), (0, 0.247525, 0.188119, 1), (0, 0.742574, 0.188119, 1)], [(0, -0.00990099, -0.00990099, 1), (0, -0.00990099, -0.00990099, 1), (0, 0, -0.00990099, 1), (0, -0.00990099, -0.00990099, 1)]]) , 
+	    ustride = 10 , 
+vstride = 10 , 	    )
+	leaf_surface_patch.name = "leaf_surface_patch"
+	petal_surface_patch = pgl.BezierPatch(	
+	    pgl.Point4Matrix([[(-0.929873, -0.29792, 0.397227, 1), (-1.02015, 0, 0.550701, 1), (-1.02015, 0, 0.550701, 1), (-0.947929, 0.252781, 0.397227, 1)], [(-0.677092, -0.478478, 0.397227, 1), (-0.911817, -0.225697, -0.0451395, 1), (-0.902789, 0.225697, -0.0451395, 1), (-0.713203, 0.415283, 0.397227, 1)], [(-0.252781, -0.46945, 0.117363, 1), (-0.46945, -0.225697, 0.0993068, 1), (-0.46945, 0.225697, 0.0993068, 1), (-0.270837, 0.424311, 0.162502, 1)], [(0, 0, 0, 1), (0, 0, 0, 1), (0, 0, 0, 1), (0, 0, 0, 1)]]) , 
+	    ustride = 10 , 
+vstride = 10 , 	    )
+	petal_surface_patch.name = "petal_surface_patch"
+	ground_surface_patch = pgl.BezierPatch(	
+	    pgl.Point4Matrix([[(-0.52192, -0.453843, -0.204229, 1), (-0.57865, -0.340382, -0.192883, 1), (-0.589996, 0.374421, -0.204229, 1), (-0.510574, 0.465189, -0.204229, 1)], [(-0.374421, -0.510574, -0.204229, 1), (-0.283652, -0.294998, 0.192883, 1), (-0.283652, 0.283652, 0.192883, 1), (-0.385767, 0.533266, -0.204229, 1)], [(0.272306, -0.510574, -0.192883, 1), (0.283652, -0.294998, 0.192883, 1), (0.283652, 0.272306, 0.192883, 1), (0.272306, 0.510574, -0.192883, 1)], [(0.374421, -0.419805, -0.192883, 1), (0.431151, -0.283652, -0.204229, 1), (0.419805, 0.283652, -0.192883, 1), (0.351728, 0.453843, -0.204229, 1)]]) , 
+	    ustride = 10 , 
+vstride = 10 , 	    )
+	ground_surface_patch.name = "ground_surface_patch"
+	Totoleaf = pgl.BezierPatch(	
+	    pgl.Point4Matrix([[(0.00990099, -0.00990099, 0.990099, 1), (0.019802, 0, 0.980198, 1), (0.00990099, 0, 0.990099, 1), (0.00990099, 0, 0.990099, 1)], [(-0.11232, -0.231828, 0.676126, 1), (-0.336634, -0.158416, 0.267327, 1), (-0.336634, 0.207921, 0.267327, 1), (-0.126782, 0.25623, 0.724719, 1)], [(0.00193113, -0.364476, 0.185141, 1), (0, -0.247525, 0.188119, 1), (0, 0.247525, 0.188119, 1), (-0.000284781, 0.409708, 0.196407, 1)], [(-0.000920106, -0.000726733, -0.0134764, 1), (0, -0.00990099, -0.00990099, 1), (0, 0, -0.00990099, 1), (0, -0.00990099, -0.00990099, 1)]]) , 
+	    ustride = 10 , 
+vstride = 10 , 	    )
+	Totoleaf.name = "Totoleaf"
+	panel_0 = ({'active': True, 'visible': True, 'name': 'Panel 2'},[('NurbsPatch',leaf_surface_patch),('NurbsPatch',petal_surface_patch),('NurbsPatch',ground_surface_patch),('NurbsPatch',Totoleaf)])
+	parameterset = [panel_0,]
+	context["__functions__"] = []
+	context["__curves__"] = []
+	context["__parameterset__"] = parameterset
+	context["leaf_surface_patch"] = leaf_surface_patch
+	context["petal_surface_patch"] = petal_surface_patch
+	context["ground_surface_patch"] = ground_surface_patch
+	context["Totoleaf"] = Totoleaf
