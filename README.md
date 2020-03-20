@@ -11,16 +11,21 @@ https://docs.conda.io/en/latest/miniconda.html
 Now, install dependencies of MappleT by create firstly a conda environment with 
 
 ```
-conda create -y -n mappleT -c openalea -c conda-forge python=2.7 \
+conda create -y -n mappleT -c openalea -c anaconda python=2.7 \
 scons=2 \
 openalea.sconsx \
 openalea.plantgl \
 openalea.lpy \
+openalea.fractalysis \
+openalea.misc \
 boost=1.66.0 \
+mpfr=3.1 \
 scipy \
 pillow \
 nose \
 xlrd \
+matplotlib \
+jupyter_client=5 \
 cython
 ```
 
@@ -30,11 +35,6 @@ cython
 conda activate mappleT
 ```
 
-##### Continue dependencies installation with pip install
-
-```
-pip install matplotlib
-```
 
 ##### Continue dependencies installation with openalea noy conda released package
 
@@ -43,19 +43,6 @@ pip install matplotlib
 ```
 git clone https://github.com/openalea-incubator/plantik
 cd plantik; python setup.py install; cd ..
-```
-###### MISC
-
-```
-git clone https://github.com/openalea/misc
-cd misc; python setup.py install; cd ..
-```
-
-###### Fractalysis
-
-```
-git clone https://github.com/openalea/fractalysis
-cd fractalysis; python setup.py install; cd ..
 ```
 
 ###### Structure Analysis
