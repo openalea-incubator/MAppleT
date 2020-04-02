@@ -29,9 +29,6 @@ if __name__ == '__main__':
           url=url,
           license=license,
 
-          namespace_packages=['openalea'],
-          create_namespaces=True,
-
           # Packages
           packages=['openalea',
                     'openalea.stocatree',
