@@ -68,6 +68,6 @@ python setup.py develop
 ## Running MappleT
 
 Launch 
-````
+```
 lpy share/data/stocatree.lpy
 ```
